@@ -138,7 +138,7 @@ if($text){
 $user = json_decode(file_get_contents("data/users/$from_id.json"), true);
 # --------------------------- #
 
-if(strpos(strtolower($text), '/start') !== false or $text == $backbtn){
+if(strtolower($text) == '/start' or $text == $backbtn){
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>'اوه پسر! باورم نمیشه! خیلی خوش اومدی😦
@@ -176,7 +176,7 @@ elseif($text == '🆕 جدیدترین ویس ها'){
 }
 
 
-elseif($text == '🎤 ارسال ویس'){
+elseif($text == '🎤 ارسال ویس' or $text == '/start sendvoice'){
     if($user['sendvoice']){
         SendMessage($from_id, 'شما یک ویس در حال انتظار دارید! لطفا صبر کنید تا ویس ارسالی شما توسط مدیریت بررسی شود، سپس میتوانید برای ارسال ویس جدید اقدام کنید.');
         exit();
@@ -534,20 +534,28 @@ elseif(!is_null($inline_text)){
             'title' => $voiceinfo['name'],
         ];
     }
-    Bot('answerInlineQuery', [
+    $dataval = [
         'inline_query_id' => $membercalls,
-        'results' => json_encode($results),
-        'switch_pm_text'=> 'تنظیمات نمایش ویس ها',
-        'switch_pm_parameter'=> 'showsettings'
-    ]);
+        'results' => json_encode($results)
+    ];
+    if(strlen($inline_text) < 1){
+        $dataval['switch_pm_text'] = 'ارسال ویس جدید';
+        $dataval['switch_pm_parameter'] = 'sendvoice';
+    }
+    Bot('answerInlineQuery', $dataval);
 }
 
 elseif($update->message->voice){
     $vid = $update->message->voice->file_unique_id;
-    if(!is_file("data/voices/$vid.json")) exit();
+    $found = true;
+    if(!is_file("data/voices/$vid.json")) $found = false;
     $voiceinfo = json_decode(file_get_contents("data/voices/$vid.json"), true);
-    if(!$voiceinfo['accepted']) exit();
-
+    if(!$voiceinfo['accepted']) $found = false;
+    if($message->via_bot->username !== 'OhPesarBot') $found = false;
+    if(!$found && $user['step'] == 'none'){
+        SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
+        exit();
+    }
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>'🎤 نام ویس ارسالی : '.$voiceinfo['name'],
