@@ -1,0 +1,17 @@
+{
+    "TOKEN": "",
+    "CHANNEL":{
+        "OFFICIAL": "",
+        "DATABASE": "",
+        "DATABASEID": ""
+    },
+    "DEFAULTS": {
+        "FOLDERS": [
+            "data",
+            "data/users",
+            "data/voices"
+        ],
+        "FILES": []
+    },
+    "ADMINS": []
+}
