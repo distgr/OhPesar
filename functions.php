@@ -17,6 +17,13 @@ function SendVoice($chat_id, $voice, $markup=null, $caption=null){
         'caption'=> $caption
     ]);
 }
+function DeleteMessage($chat_id, $message_id)
+{
+    Bot('deletemessage', [
+        'chat_id' => $chat_id,
+        'message_id' => $message_id,
+    ]);
+}
 function EditMessage($chatid, $msgid, $text, $mod='MarkDown', $keyboard = null){
     Bot('EditMessageText', ['chat_id'=>$chatid,'message_id'=>$msgid,'text'=>$text,'parse_mode'=>$mod,'reply_markup'=>$keyboard]);
 }
