@@ -263,6 +263,89 @@ $senderusername"
 
 elseif($callback_query){
     $data = $callback_query->data;
+    if($data == 'pendingmode'){
+        bot('answercallbackquery', [
+            'callback_query_id' => $update->callback_query->id,
+            'text' => "🕐 این ویس درحالت بررسی قرار دارد و هنوز توسط تایید نشده است. ویس شما تا زمانی که تایید نشود قابل استفاده نمیباشد.",
+            'show_alert' => true
+        ]);
+    }
+    if(strpos($data, 'myvoicespage_') !== false){
+        $pagenum = intval(str_replace('myvoicespage_', '', $data));
+        $__VOICES = [];
+        foreach (sortandscan('data/voices') as $_VOICE) {
+            $_VOICEINFO = json_decode(file_get_contents('data/voices/'.$_VOICE), true);
+            if($_VOICEINFO['sender'] == $fromid){
+                $__VOICES[] = $_VOICE;
+            }
+        }
+        
+        $AllCount = count($__VOICES);
+        if((10*$pagenum) > $AllCount){
+            $lastpage = true;
+        }else{
+            $lastpage = false;
+        }
+        $__VOICES = array_splice($__VOICES, (10*(($pagenum)-1)), 10);
+
+        $MyVoicesKey = [];
+
+        if($lastpage){
+            $MyVoicesKey[] = [['text'=>'صفحه قبلی ◀️', 'callback_data'=>'myvoicespage_'.strval($pagenum-1)]];
+        }elseif($pagenum == 1){
+            $MyVoicesKey[] = [['text'=>'▶️ صفحه بعدی', 'callback_data'=>'myvoicespage_'.strval($pagenum+1)]];
+        }else{
+            $MyVoicesKey[] = [['text'=>'صفحه قبلی ◀️', 'callback_data'=>'myvoicespage_'.strval($pagenum-1)], ['text'=>'▶️ صفحه بعدی', 'callback_data'=>'myvoicespage_'.strval($pagenum+1)]];
+        }
+
+        foreach ($__VOICES as $uservoice) {
+            $voice_unique_id = str_replace('.json', '', $uservoice);
+            $user_voice_info = json_decode(file_get_contents('data/voices/'.$uservoice), true);
+            if(!$user_voice_info['accepted']){
+                $MyVoicesKey[] = [['text'=>'🕐 '.$user_voice_info['name'], 'callback_data'=>'pendingmode']];
+                continue;
+            }
+            $MyVoicesKey[] = [
+                ['text'=>'🎤 '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
+                ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$voice_unique_id],
+            ];
+        }
+
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=> $messageid,
+            'text'=>"لیست تمامی ویس های ثبت شما در ربات توسط شما 👇🏻
+🔄 تعداد تمامی ویس های ثبت شده توسط شما : $AllCount",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>$MyVoicesKey,
+            ])
+        ]);
+
+    }
+    if(strpos($data, 'removebyuser_') !== false){
+        $voice_unique_id = str_replace('removebyuser_', '', $data);
+        $voiceinfo = json_decode(file_get_contents('data/voices/'.$voice_unique_id.'.json'), true);
+        $voicename = $voiceinfo['name'];
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=> $messageid,
+            'text'=>"❕ آیا مطمئن هستید که میخواهید ویس « $voicename » را حذف کنید ؟",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>[
+                    [['text'=>"✅ بله حذف کن", 'callback_data'=>'yesdeletebyuser_'.$voice_unique_id], ['text'=>"❌ نه حذف نکن", 'callback_data'=>'nodeletebyuser']]
+                ],
+            ])
+        ]);
+    }
+    if(strpos($data, 'yesdeletebyuser_') !== false){
+        $voice_unique_id = str_replace('yesdeletebyuser_', '', $data);
+        unlink('data/voices/'.$voice_unique_id.'.json');
+        EditMessage($chatid, $messageid, '✅ ویس مورد نظر حذف شد.');
+    }
+    if(strpos($data, 'nodeletebyuser') !== false){
+        EditMessage($chatid, $messageid, '❌ عملیات حذف ویس لغو شد.');
+    }
+    
     if(strpos($data, 'accept-') !== false){
         bot('answercallbackquery', [
             'callback_query_id' => $update->callback_query->id,
@@ -499,6 +582,106 @@ elseif($text == '🧐 راهنما'){
     SendPhoto($chat_id, 'https://t.me/VoiceDatabaseOfOhPesar/76', json_encode(['inline_keyboard'=>[[['text'=>"🎤 ارسال یک ویس", 'switch_inline_query'=>'']]]]), $cap, null);
 }
 
+
+
+
+elseif($text == '❣️ ویس های من' or $text == '/myvoices'){
+    $__VOICES = [];
+    foreach (sortandscan('data/voices') as $_VOICE) {
+        $_VOICEINFO = json_decode(file_get_contents('data/voices/'.$_VOICE), true);
+        if($_VOICEINFO['sender'] == $from_id){
+            $__VOICES[] = $_VOICE;
+        }
+    }
+
+    if($__VOICES == []){
+        SendMessage($chat_id, '⚠️ شما هیچ ویسی در ربات ثبت نکردید !');
+        exit();
+    }
+    $allvoicescount = count($__VOICES);
+    $MyVoicesKey = []; // To store 
+
+    if(count($__VOICES) > 10){
+        $__VOICES = array_splice($__VOICES, 0, 10, true);
+        $MyVoicesKey[] = [['text'=>'▶️ صفحه بعدی', 'callback_data'=>'myvoicespage_2']];
+    }
+
+    foreach ($__VOICES as $uservoice) {
+        $voice_unique_id = str_replace('.json', '', $uservoice);
+        $user_voice_info = json_decode(file_get_contents('data/voices/'.$uservoice), true);
+        if(!$user_voice_info['accepted']){
+            $MyVoicesKey[] = [['text'=>'🕐 '.$user_voice_info['name'], 'callback_data'=>'pendingmode']];
+            continue;
+        }
+        $MyVoicesKey[] = [
+            ['text'=>'🎤 '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
+            ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$voice_unique_id],
+        ];
+    }
+
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>"لیست تمامی ویس های ثبت شما در ربات توسط شما 👇🏻
+🔄 تعداد تمامی ویس های ثبت شده توسط شما : $allvoicescount",
+        'reply_markup'=>json_encode([
+            'inline_keyboard'=>$MyVoicesKey,
+        ])
+    ]);
+}
+
+
+elseif($text == '💬 پیام همگانی' && in_array($chat_id, $CONFIG['ADMINS'])){
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>"لطفا پیام مورد نظر خود را ارسال کنید تا برای همه اعضا ارسال شود : (لطفا در ارسال پیام دقت کنید، این بخش فاقد تاییدیه میباشد و به محض ارسال پیام برای همه ارسال میشود)",
+        'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
+    ]);
+    $user['step'] = 'msg2all';
+    UpdateUser();
+}
+
+elseif($user['step'] == 'msg2all' && $text !== $backbtn or strtolower($text) !== '/start'){
+    $memberscount = count(sortandscan('data/users'));
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>"درحال ارسال برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند ارسال کاری انجام ندهید!",
+        'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
+    ]);
+    foreach(sortandscan('data/users') as $selecteduser){
+        SendMessage(str_replace('.json', '', $selecteduser), $text);
+    }
+    SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات ارسال شد. ✅');
+    $user['step'] = 'none';
+    UpdateUser();
+}
+
+
+elseif($text == '💬 فوروارد همگانی' && in_array($chat_id, $CONFIG['ADMINS'])){
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>"لطفا پیام مورد نظر خود را فوروارد کنید تا برای همه اعضا فوروارد شود : (لطفا در ارسال پیام دقت کنید، این بخش فاقد تاییدیه میباشد و به محض ارسال پیام برای همه ارسال میشود)",
+        'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
+    ]);
+    $user['step'] = 'forward2all';
+    UpdateUser();
+}
+
+elseif($user['step'] == 'forward2all' && $text !== $backbtn or strtolower($text) !== '/start'){
+    $memberscount = count(sortandscan('data/users'));
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>"درحال فوروارد برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند فوروارد کاری انجام ندهید!",
+        'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
+    ]);
+    foreach(sortandscan('data/users') as $selecteduser){
+        Forward(str_replace('.json', '', $selecteduser), $from_id, $text);
+    }
+    SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات فوروارد شد. ✅');
+    $user['step'] = 'none';
+    UpdateUser();
+}
+
+
 elseif(!is_null($inline_text)){
     if(!is_file("data/users/$id_from.json")){
         Bot('answerInlineQuery', [
@@ -538,10 +721,15 @@ elseif(!is_null($inline_text)){
         'inline_query_id' => $membercalls,
         'results' => json_encode($results)
     ];
+    if($results == []){
+        $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا شد';
+        $dataval['switch_pm_parameter'] = 'noresult';
+    }
     if(strlen($inline_text) < 1){
         $dataval['switch_pm_text'] = 'ارسال ویس جدید';
         $dataval['switch_pm_parameter'] = 'sendvoice';
     }
+    
     Bot('answerInlineQuery', $dataval);
 }
 
@@ -566,5 +754,7 @@ elseif($update->message->voice){
         ])
     ]);
 }
+
+
 
 ?>
