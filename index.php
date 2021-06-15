@@ -640,8 +640,11 @@ elseif($text == '💬 پیام همگانی' && in_array($chat_id, $CONFIG['ADMI
     UpdateUser();
 }
 
-elseif($user['step'] == 'msg2all' && $text !== $backbtn or strtolower($text) !== '/start'){
+elseif($user['step'] == 'msg2all' && ($text !== $backbtn or strtolower($text) !== '/start')){
+    $user['step'] = 'none';
+    UpdateUser();
     $memberscount = count(sortandscan('data/users'));
+    
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"درحال ارسال برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند ارسال کاری انجام ندهید!",
@@ -651,8 +654,7 @@ elseif($user['step'] == 'msg2all' && $text !== $backbtn or strtolower($text) !==
         SendMessage(str_replace('.json', '', $selecteduser), $text);
     }
     SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات ارسال شد. ✅');
-    $user['step'] = 'none';
-    UpdateUser();
+    
 }
 
 
@@ -666,7 +668,9 @@ elseif($text == '💬 فوروارد همگانی' && in_array($chat_id, $CONFIG
     UpdateUser();
 }
 
-elseif($user['step'] == 'forward2all' && $text !== $backbtn or strtolower($text) !== '/start'){
+elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text) !== '/start')){
+    $user['step'] = 'none';
+    UpdateUser();
     $memberscount = count(sortandscan('data/users'));
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
@@ -674,16 +678,16 @@ elseif($user['step'] == 'forward2all' && $text !== $backbtn or strtolower($text)
         'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
     ]);
     foreach(sortandscan('data/users') as $selecteduser){
-        Forward(str_replace('.json', '', $selecteduser), $from_id, $text);
+        Forward(str_replace('.json', '', $selecteduser), $from_id, $message_id);
     }
     SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات فوروارد شد. ✅');
-    $user['step'] = 'none';
-    UpdateUser();
 }
 
 
 elseif(!is_null($inline_text)){
-    if(!is_file("data/users/$id_from.json")){
+    $results = [];
+    $inlineuserid = $update->inline_query->from->id;
+    if(!is_file("data/users/$inlineuserid.json")){
         Bot('answerInlineQuery', [
             'inline_query_id' => $membercalls,
             'results' => json_encode($results),
@@ -701,7 +705,6 @@ elseif(!is_null($inline_text)){
         ]);
         exit();
     }
-    $results = [];
     $voices = array_diff(sortandscan('data/voices'), ['.', '..', '.json']);
     if(strlen($inline_text) < 1){
     $voices = array_slice($voices, 0, 20, true);
