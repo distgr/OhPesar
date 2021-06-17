@@ -1,17 +1,15 @@
 {
     "TOKEN": "",
     "CHANNEL":{
-        "OFFICIAL": "",
-        "DATABASE": "",
-        "DATABASEID": ""
+        "OFFICIAL": "", // Channel Id Without @
+        "DATABASE": "", // Channel Id Without @
+        "DATABASEID": "", // Channel numeric id
+        "LOGID": "",  // Channel numeric id
     },
-    "DEFAULTS": {
-        "FOLDERS": [
-            "data",
-            "data/users",
-            "data/voices"
-        ],
-        "FILES": []
+    "DATABASE":{
+        "DBNAME": "", // Database name
+        "USERNAME": "",  // Database username
+        "PASSWORD": "", // Database password
     },
-    "ADMINS": []
+    "ADMINS": [000000000], // Bot Admins
 }
