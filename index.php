@@ -6,6 +6,7 @@ date_default_timezone_set('Asia/Tehran');
 $CONFIG = json_decode(file_get_contents('config.json'), true);
 include('functions.php');
 include('buttons.php');
+include('database.php');
 //-----------------------------------------
 
 define('API_KEY', $CONFIG['TOKEN']);
@@ -43,10 +44,10 @@ if(isset($update->message)){
     $first_name = $message->from->first_name;
     $last_name = $message->from->last_name;
     $username = $message->from->username;
-    $tch = json_decode(Bot('getChatMember', [
-        'chat_id'=> '@'.$channel,
-        'user_id'=>$from_id
-    ]), true)['result']['status'];
+    // $tch = json_decode(Bot('getChatMember', [
+    //     'chat_id'=> '@'.$channel,
+    //     'user_id'=>$from_id
+    // ]), true)['result']['status'];
 }
 if(isset($update->callback_query)){
     $callback_query = $update->callback_query;
@@ -59,83 +60,39 @@ if(isset($update->callback_query)){
     $lastname = $callback_query->from->last_name;
     $cusername = $callback_query->from->username;
     $membercall = $callback_query->id;
-    $tch = json_decode(Bot('getChatMember', [
-        'chat_id'=> '@'.$channel,
-        'user_id'=>$fromid
-    ]), true)['result']['status'];
+    // $tch = json_decode(Bot('getChatMember', [
+    //     'chat_id'=> '@'.$channel,
+    //     'user_id'=>$fromid
+    // ]), true)['result']['status'];
 }
 if(isset($update->inline_query)){
     $inline = $update->inline_query;
     $inline_text = $inline->query;
     $membercalls = $inline->id;
     $id_from = $inline->from->id;
-    $tch = json_decode(Bot('getChatMember', [
-        'chat_id'=> '@'.$channel,
-        'user_id'=>$id_from
-    ]), true)['result']['status'];
+    // $tch = json_decode(Bot('getChatMember', [
+    //     'chat_id'=> '@'.$channel,
+    //     'user_id'=>$id_from
+    // ]), true)['result']['status'];
 }
-
-
-
-# --------------------------- #
 
 
 
 
 # --------------------------- #
 
-foreach($CONFIG['DEFAULTS'] as $part => $val){
-    foreach($val as $i){
-        if($part == 'FOLDERS'){
-            if(!is_dir($i)) mkdir($i);
-        }else{
-            if(!is_file($i)) file_put_contents($i, null);
-        }
-    }
+if(isset($from_id))
+    $user = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$from_id}' LIMIT 1"));
+    
+if (!$user) {
+    $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$from_id}', 'none')");
 }
-
-if(!is_file('data/users/'.$from_id.'.json'))
-    file_put_contents('data/users/'.$from_id.'.json', json_encode([
-        'step'=> 'none'
-    ]));
-
 # --------------------------- #
-
-if($text == '/start jointhechannel'){
-    Bot('sendMessage',[
-            'chat_id'=>$chat_id,
-            'text'=>'برای عضویت در کانال رسمی ربات اوه پسر، روی کلمه زیر کلیک کنید :',
-            'reply_markup'=>json_encode([
-                'inline_keyboard'=>[
-                [['text'=>"✅ ورود به کانال", 'url'=>'https://t.me/'.$channel]],
-                ],
-            ])
-        ]);
-        exit();
-}
 
 if(in_array($from_id, $CONFIG['ADMINS'])){
         $home[] = [['text'=>"📍 پنل مدیریت"]];
 }
 
-if($text){
-    if(!in_array($tch,['member','creator','administrator'])){
-        Bot('sendMessage',[
-            'chat_id'=>$chat_id,
-            'text'=>'اوه پسر! 🤯 دیدی چیشد؟ برای اینکه بتونی از ربات استفاده کنی باید داخل کانال رسمی «اوه پسر» عضو باشی! ولی متاسفانه تو عضو کانال اوه پسر نیستی و نمیتونی از ربات استفاده کنی! 🤛🏻
-    پس همین الان جویین شو و دوباره وارد ربات شو و دوباره پیامتو ارسال کن 👇🏻',
-            'reply_markup'=>json_encode([
-                'inline_keyboard'=>[
-                [['text'=>"✅ ورود به کانال", 'url'=>'https://t.me/'.$channel]],
-                ],
-            ])
-        ]);
-        exit();
-    }
-}
-
-# --------------------------- #
-$user = json_decode(file_get_contents("data/users/$from_id.json"), true);
 # --------------------------- #
 
 if(strtolower($text) == '/start' or $text == $backbtn){
@@ -148,19 +105,23 @@ if(strtolower($text) == '/start' or $text == $backbtn){
         'reply_markup'=>json_encode(['keyboard'=>$home ,'resize_keyboard'=>true
         ])
     ]);
-    $user['step'] = 'none';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
     exit();
 }
 
 elseif($text == '🆕 جدیدترین ویس ها'){
-    $list = [];
-    $voices = array_diff(sortandscan('data/voices'), ['.', '..', '.json']);
-    $voices = array_slice($voices, 0, 10, true);
-    foreach($voices as $thevoice){
-        $voiceinfo = json_decode(file_get_contents("data/voices/$thevoice"), true);
+    $query = mysqli_query($db, "SELECT * FROM `voices`");
+    $num = mysqli_num_rows($query);
+    
+    $list = $voices = [];
+    
+    for ($i=0; $i < $num; $i++) { $voices[] = mysqli_fetch_assoc($query); }
+    $voices = array_reverse($voices);
+    $voices = array_splice($voices, 0, 10, true);
+    
+    foreach($voices as $voiceinfo){
+        if($voiceinfo['mode'] == 'private' && $voiceinfo['sender'] != $inlineuserid){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
-        if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
         $list[] = [['text'=>"🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$voiceinfo['name']]];
     }
 
@@ -175,22 +136,41 @@ elseif($text == '🆕 جدیدترین ویس ها'){
     
 }
 
-
-elseif($text == '🎤 ارسال ویس' or $text == '/start sendvoice'){
-    if($user['sendvoice']){
-        SendMessage($from_id, 'شما یک ویس در حال انتظار دارید! لطفا صبر کنید تا ویس ارسالی شما توسط مدیریت بررسی شود، سپس میتوانید برای ارسال ویس جدید اقدام کنید.');
-        exit();
+elseif($text == '❣️ محبوبترین ویس ها'){
+    $list = $msgbtn = [];
+    
+    $query = mysqli_query($db, "SELECT * FROM `voices` ORDER BY `voices`.`usecount` DESC");
+    $num = mysqli_num_rows($query);
+    
+    for ($i=0; $i < $num; $i++) {
+        $voiceinfo = mysqli_fetch_assoc($query);
+        if($voiceinfo['mode'] == 'private' && $voiceinfo['sender'] != $inlineuserid){ continue; }
+        if(!$voiceinfo['accepted']){ continue; }
+        $msgbtn[] = [['text'=>"❣️🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$voiceinfo['name']]];
     }
-    $user['step'] = 'sendvoice1';
-    UpdateUser();
+    $msgbtn = array_splice($msgbtn, 0, 10, true);
+    
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>'لیست 10 ویس محبوب و پر استفاده در «اوه پسر» 👇🏻
+✅ برای استفاده از ویس ها میتوانید روی آنها کنیک کنید.',
+        'reply_markup'=>json_encode([
+        'inline_keyboard'=>$msgbtn,
+        ])
+    ]);
+    
+}
+
+
+elseif($text == '🎤 افزودن ویس' or $text == '/start sendvoice'){
+    $db->query("UPDATE `user` SET `step` = 'sendvoice1' WHERE `id` = '{$from_id}' LIMIT 1");
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>'لطفا نام ویس را ارسال کنید.',
         'reply_markup'=>json_encode(['keyboard'=>$back, 'resize_keyboard'=>true])
     ]);
 }
-
-elseif($text && $user['step'] == 'sendvoice1' && $text !== $backbtn){
+elseif($user['step'] == 'sendvoice1' && $text !== $backbtn){
     if(strlen($text) < 3){
         SendMessage($from_id, 'نام ویس حداقل باید دارای 3 کاراکتر باشد');
         exit();
@@ -199,9 +179,32 @@ elseif($text && $user['step'] == 'sendvoice1' && $text !== $backbtn){
         SendMessage($from_id, 'نام ویس حداکثر باید دارای 60 کاراکتر باشد');
         exit();
     }
-    $user['voicename'] = $text;
-    $user['step'] = 'sendvoice2';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'sendvoice2', `voicename` = '{$text}' WHERE `id` = '{$from_id}' LIMIT 1");
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>'لطفا تعیین کنید که تصمیم دارید ویس خود را بر روی چه حالتی قرار دهید 👇🏻
+🔓 درصورتی که ویس خود را روی حالت عمومی قرار دهید، ویس شما نیاز به تایید توسط مدیریت را دارد و پس از تایید در دسترس عموم قرار میگیرد.
+🔐 اما درصورتی که میخواهید ویس خود را روی حالت خصوصی قرار دهید، ویس شما نیاز به مرحله تایید ندارد و ویس شما در ربات ثبت میشود، اما فقط خودتان قادر به مشاهده و استفاده آن ویس خواهید بود.',
+        'reply_markup'=>json_encode(['keyboard'=>$privateorpublic, 'resize_keyboard'=>true])
+    ]);
+}
+
+elseif($text && $user['step'] == 'sendvoice2' && $text !== $backbtn){
+    $buttons = [
+        "🔓 عمومی",
+        "🔐 خصوصی",
+    ];
+    if(!in_array($text, $buttons)){
+        SendMessage($chat_id, 'لطفا فقط یک گزینه را از دکمه های زیر انتخاب کنید.');
+        exit();
+    }
+    if($user['sendvoice'] == 1 && $text == $buttons[0]){
+        SendMessage($from_id, 'شما یک ویس در حال انتظار دارید! لطفا صبر کنید تا ویس ارسالی شما توسط مدیریت بررسی شود، سپس میتوانید برای ارسال ویس جدید اقدام کنید. شما درحال حاضر میتوانید یک ویس خصوصی اضافه کنید.');
+        exit();
+    }
+    if($text == $buttons[0]){ $voicemodevar = 'public'; }
+    elseif($text == $buttons[1]) { $voicemodevar = 'private'; }
+    $db->query("UPDATE `user` SET `step` = 'sendvoice3', `voicemode` = '{$voicemodevar}' WHERE `id` = '{$from_id}' LIMIT 1");
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>'حالا لطفا خود ویس را ارسال کنید.',
@@ -209,54 +212,68 @@ elseif($text && $user['step'] == 'sendvoice1' && $text !== $backbtn){
     ]);
 }
 
-elseif($user['step'] == 'sendvoice2' && $text !== $backbtn){
+elseif($user['step'] == 'sendvoice3' && $text !== $backbtn){
+    $systemid = $update->message->voice->file_unique_id;
     if(!$update->message->voice){
         SendMessage($chat_id, 'لطفا فقط یک ویس را ارسال کنید.');
         exit();
     }
+    $getsubmittedvoice = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$systemid}' LIMIT 1"));
+    if($getsubmittedvoice){
+        if($getsubmittedvoice['mode'] == 'private'){
+            SendMessage($chat_id, '❗️اوه پسر! این ویسی که فرستادی قبلا داخل ربات توسط یه شخص دیگه ثبت شده، ولی مثل اینکه ویسی که ثبت کرده خصوصی بوده و فقط خودش میتونه از این ویس استفاده کنه... حالا لطفا یه ویس دیگه بفرست :');
+        }else{
+            $subvoicename = $getsubmittedvoice['name'];
+            SendMessage($chat_id, "❗️اوه پسر! این ویسی که فرستادی قبلا داخل ربات با نام « $subvoicename » توسط یه شخص دیگه ثبت شده... حالا لطفا یه ویس دیگه بفرست :");
+        }
+        exit();
+    }
     $vid = Forward('-1001169964092', $chat_id, $message_id);
     $vr = json_decode($vid, true);
-    $dbase = [
-        'accepted'=> false,
-        'name'=> $user['voicename'],
-        'url' => 'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']),
-        'sender'=> $from_id,
-        'messageid'=> $vr['result']['message_id']
-    ];
+    if($user['voicemode'] == 'public'){ $accepted_var = false; }else{ $accepted_var = true; }
     $id = strval(rand(11111,99999));
-    // $systemid = strval($from_id)."000".$id;
-    $systemid = $update->message->voice->file_unique_id;
-    file_put_contents('data/voices/'.$systemid.'.json', json_encode($dbase));
-    Bot('sendMessage',[
-        'chat_id'=>$chat_id,
-        'text'=>'ویس شما برای تایید برای مدیریت ارسال شد. لطفا منتظر بمانید تا ویس ارسالی توسط شما تایید شود',
-        'reply_markup'=>json_encode(['keyboard'=>$home, 'resize_keyboard'=>true])
-    ]);
-    $first_name = $message->from->first_name;
-    $last_name = $message->from->last_name;
-    $username = $update->callback_query->from->username;
-    $voicename = $user['voicename'];
-    $senderusername = '';
-    if(isset($username)){
-        $senderusername = '🆔 آیدی ارسال کننده : @'.$username;
-    }
-    SendVoice('-1001425492536',
-    'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']), 
-    json_encode([
-        'inline_keyboard'=>[
-        [['text'=>"✅",'callback_data'=>'accept-'.$systemid], ['text'=>"❌",'callback_data'=>'reject-'.$systemid]],
-        ],
-    ]),
-    "🎤 $voicename
-
+    $definedvoicename = $user['voicename'];
+    $voicedburl = 'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']);
+    $voicemsgid = $vr['result']['message_id'];
+    $thevoicemode = $user['voicemode'];
+    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '{$accepted_var}', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
+    if($user['voicemode'] == 'public'){
+        Bot('sendMessage',[
+            'chat_id'=>$chat_id,
+            'text'=>'ویس شما برای تایید برای مدیریت ارسال شد. لطفا منتظر بمانید تا ویس ارسالی توسط شما تایید شود',
+            'reply_markup'=>json_encode(['keyboard'=>$home, 'resize_keyboard'=>true])
+        ]);
+        $first_name = $message->from->first_name;
+        $last_name = $message->from->last_name;
+        $username = $update->callback_query->from->username;
+        $voicename = $user['voicename'];
+        $senderusername = '';
+        if(isset($username)){
+            $senderusername = '🆔 آیدی ارسال کننده : @'.$username;
+        }
+        SendVoice('-1001425492536',
+        'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']), 
+        json_encode([
+            'inline_keyboard'=>[
+            [['text'=>"✅",'callback_data'=>'accept-'.$systemid], ['text'=>"❌",'callback_data'=>'reject-'.$systemid]],
+            ],
+        ]),
+        "🎤 $voicename
+    
 👤 ارسال کننده : $first_name
 💬 آیدی عددی ارسال کننده : $from_id
 $senderusername"
-    );
-    $user['voicename'] = 'none';
-    $user['step'] = 'none';
-    $user['sendvoice'] = true;
-    UpdateUser();
+        );
+        $usersendvoice = '1';
+    }else{
+        Bot('sendMessage',[
+            'chat_id'=>$chat_id,
+            'text'=>'🔐 ویس شما در حالت خصوصی اضافه شد و فقط برای خودتان قابل دسترس میباشد.',
+            'reply_markup'=>json_encode(['keyboard'=>$home, 'resize_keyboard'=>true])
+        ]);
+        $usersendvoice = '0';
+    }
+    $db->query("UPDATE `user` SET `step` = 'none', `voicename` = NULL, `voicemode` = NULL, `sendvoice` = '{$usersendvoice}' WHERE `user`.`id` = '{$from_id}' LIMIT 1");
 }
 
 
@@ -272,21 +289,22 @@ elseif($callback_query){
     }
     if(strpos($data, 'myvoicespage_') !== false){
         $pagenum = intval(str_replace('myvoicespage_', '', $data));
-        $__VOICES = [];
-        foreach (sortandscan('data/voices') as $_VOICE) {
-            $_VOICEINFO = json_decode(file_get_contents('data/voices/'.$_VOICE), true);
-            if($_VOICEINFO['sender'] == $fromid){
-                $__VOICES[] = $_VOICE;
-            }
-        }
+        $page_limit = 10;
+        $query = mysqli_query($db, "SELECT * FROM `voices` WHERE `sender` = '{$fromid}'");
+        $num = mysqli_num_rows($query);
         
-        $AllCount = count($__VOICES);
-        if((10*$pagenum) > $AllCount){
+        if(($page_limit*$pagenum) >= $num){
             $lastpage = true;
         }else{
             $lastpage = false;
         }
-        $__VOICES = array_splice($__VOICES, (10*(($pagenum)-1)), 10);
+        
+        $voices = [];
+        for ($i=0; $i < $num; $i++) { 
+        	$voices[] = mysqli_fetch_assoc($query);
+        }
+        $voices = array_reverse($voices);
+        $voices = array_splice($voices, ($page_limit*(($pagenum)-1)), $page_limit);
 
         $MyVoicesKey = [];
 
@@ -298,24 +316,31 @@ elseif($callback_query){
             $MyVoicesKey[] = [['text'=>'صفحه قبلی ◀️', 'callback_data'=>'myvoicespage_'.strval($pagenum-1)], ['text'=>'▶️ صفحه بعدی', 'callback_data'=>'myvoicespage_'.strval($pagenum+1)]];
         }
 
-        foreach ($__VOICES as $uservoice) {
-            $voice_unique_id = str_replace('.json', '', $uservoice);
-            $user_voice_info = json_decode(file_get_contents('data/voices/'.$uservoice), true);
+        foreach ($voices as $user_voice_info) { 
+            if($user_voice_info['mode'] == 'public'){
             if(!$user_voice_info['accepted']){
-                $MyVoicesKey[] = [['text'=>'🕐 '.$user_voice_info['name'], 'callback_data'=>'pendingmode']];
-                continue;
+                    $MyVoicesKey[] = [['text'=>'🕐 '.$user_voice_info['name'], 'callback_data'=>'pendingmode']];
+                    continue;
+                }
             }
+            if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
             $MyVoicesKey[] = [
-                ['text'=>'🎤 '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
-                ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$voice_unique_id],
+                ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
+                ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$user_voice_info['unique_id']],
             ];
         }
+        
+        $pagelimit = gettype($num/$page_limit) == 'integer' ? ($num/$page_limit) : intval($num/$page_limit)+1;
+        
+    
 
         Bot('EditMessageText',[
             'chat_id'=>$chatid,
             'message_id'=> $messageid,
             'text'=>"لیست تمامی ویس های ثبت شما در ربات توسط شما 👇🏻
-🔄 تعداد تمامی ویس های ثبت شده توسط شما : $AllCount",
+🔄 تعداد تمامی ویس های ثبت شده توسط شما : $num
+
+📖 صفحه $pagenum از $pagelimit",
             'reply_markup'=>json_encode([
                 'inline_keyboard'=>$MyVoicesKey,
             ])
@@ -324,7 +349,7 @@ elseif($callback_query){
     }
     if(strpos($data, 'removebyuser_') !== false){
         $voice_unique_id = str_replace('removebyuser_', '', $data);
-        $voiceinfo = json_decode(file_get_contents('data/voices/'.$voice_unique_id.'.json'), true);
+        $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
         $voicename = $voiceinfo['name'];
         Bot('EditMessageText',[
             'chat_id'=>$chatid,
@@ -339,7 +364,8 @@ elseif($callback_query){
     }
     if(strpos($data, 'yesdeletebyuser_') !== false){
         $voice_unique_id = str_replace('yesdeletebyuser_', '', $data);
-        unlink('data/voices/'.$voice_unique_id.'.json');
+        $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
+        $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voice_unique_id}' LIMIT 1");
         EditMessage($chatid, $messageid, '✅ ویس مورد نظر حذف شد.');
     }
     if(strpos($data, 'nodeletebyuser') !== false){
@@ -353,17 +379,16 @@ elseif($callback_query){
             'show_alert' => false
         ]);
         $voiceid = str_replace('accept-', '', $data);
-        $getvoice = json_decode(file_get_contents('data/voices/'.$voiceid.'.json'), true);
-        $getvoice['accepted'] = true;
+        $db->query("UPDATE `voices` SET `accepted` = '1' WHERE `unique_id` = '{$voiceid}' LIMIT 1");
+        $getvoice = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
+        $voicesender = $getvoice['sender'];
         Bot('deletemessage', [
             'chat_id' => $chatid,
             'message_id' => $messageid,
         ]);
-        $usersender = json_decode(file_get_contents("data/users/".$getvoice['sender'].".json"), true);
-        SendMessage($getvoice['sender'], 'ویس شما توسط مدیریت تایید شد. ✅');
-        file_put_contents('data/voices/'.$voiceid.'.json', json_encode($getvoice));
-        $usersender['sendvoice'] = false;
-        file_put_contents("data/users/".$getvoice['sender'].".json", json_encode($usersender));
+        $voicesender = intval($getvoice['sender']);
+        $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
+        SendMessage($voicesender, 'ویس شما توسط مدیریت تایید شد. ✅');
     }elseif(strpos($data, 'reject-') !== false){
         $voiceid = str_replace('reject-', '', $data);
         bot('answercallbackquery', [
@@ -375,11 +400,11 @@ elseif($callback_query){
             'chat_id' => $chatid,
             'message_id' => $messageid,
         ]);
-        $getvoice = json_decode(file_get_contents('data/voices/'.$voiceid.'.json'), true);
+        $getvoice = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
         SendMessage($getvoice['sender'], 'ویس شما توسط مدیریت رد شد. ❌');
-        $usersender['sendvoice'] = false;
-        file_put_contents("data/users/".$getvoice['sender'].".json", json_encode($usersender));
-        unlink('data/voices/'.$voiceid.'.json');
+        $voicesender = intval($getvoice['sender']);
+        $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
+        $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voiceid}' LIMIT 1");
         
     }
 }
@@ -399,26 +424,23 @@ elseif($text == '🗑 حذف ویس' && in_array($from_id, $CONFIG['ADMINS'])){
         'text'=>'لطفا ویس مورد نظر از «اوه پسر» را ارسال یا فوروارد کنید تا حذف شود :',
         'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
     ]);
-    $user['step'] = 'deletevoice1';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'deletevoice1' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($update->message->voice && $user['step'] == 'deletevoice1'){
     $voiceid = $update->message->voice->file_unique_id;
-    if(!is_file("data/voices/$voiceid.json")){
+    $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
+    if(!$voiceinfo){
         SendMessage($chat_id, 'چنین ویسی در دیتابیس «اوه پسر» یافت نشد !');
         exit();
     }
-    $voicedata = json_decode(file_get_contents("data/voices/$voiceid.json"), true);
-    $voicename = $voicedata['name'];
+    $voicename = $voiceinfo['name'];
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"آیا مطمئن هستید که میخواهید ویس « $voicename » را حذف کنید؟",
         'reply_markup'=>json_encode(['keyboard'=>$yesnopanel ,'resize_keyboard'=>true])
     ]);
-    $user['step'] = 'deletevoice2';
-    $user['voiceid'] = $voiceid;
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'deletevoice2', `voicename` = '{$voiceid}' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($text && $text !== $backbtn && $user['step'] == 'deletevoice2'){
@@ -433,22 +455,20 @@ elseif($text && $text !== $backbtn && $user['step'] == 'deletevoice2'){
             'text'=>"عملیات حذف ویس لغو شد.",
             'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
         ]);
-        $user['step'] = 'none';
-        UpdateUser();
+        $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
         exit();
     }
-    $voiceid = $user['voiceid'];
-    $voicedata = json_decode(file_get_contents("data/voices/$voiceid.json"), true);
-    $voicename = $voicedata['name'];
-    unlink("data/voices/$voiceid.json");
+    $voiceid = $user['voicename'];
+    $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
+    $voicename = $voiceinfo['name'];
+    $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voiceid}' LIMIT 1");
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"ویس « $voicename » با موفقیت حذف شد.",
         'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
     ]);
     SendMessage($CONFIG['CHANNEL']['LOGID'], "ویس « $voicename » توسط ادمین $from_id با نام $first_name حذف شد.");
-    $user['step'] = 'none';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'none' , `voicename` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($text == '✏️ ویرایش ویس' && in_array($from_id, $CONFIG['ADMINS'])){
@@ -457,30 +477,27 @@ elseif($text == '✏️ ویرایش ویس' && in_array($from_id, $CONFIG['ADMI
         'text'=>'لطفا ویس مورد نظر را ارسال کنید :',
         'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
     ]);
-    $user['step'] = 'editvoice1';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'editvoice1' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($update->message->voice && $user['step'] == 'editvoice1'){
     $voiceid = $update->message->voice->file_unique_id;
-    if(!is_file("data/voices/$voiceid.json")){
+    $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
+    if(!$voiceinfo){
         SendMessage($chat_id, 'چنین ویسی در دیتابیس «اوه پسر» یافت نشد !');
         exit();
     }
-    $voicedata = json_decode(file_get_contents("data/voices/$voiceid.json"), true);
-    $voicename = $voicedata['name'];
+    $voicename = $voiceinfo['name'];
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"شما ویس « $voicename » را انتخاب کردید. لطفا از گزینه های زیر یک مورد را برای ویرایش انتخاب کنید 👇🏻",
         'reply_markup'=>json_encode(['keyboard'=>$editvoicepanel ,'resize_keyboard'=>true])
     ]);
-    $user['step'] = 'editvoice2';
-    $user['voiceid'] = $voiceid;
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'editvoice2', `voicename` = '{$voiceid}' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
-    $voiceid = $user['voiceid'];
+    $voiceid = $user['voicename'];
     $choices = [
         '✏️ ویرایش نام ویس',
         '✏️ ویرایش صدای ویس'  
@@ -489,47 +506,46 @@ elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
         SendMessage($chat_id, 'لطفا فقط از دکمه های پایین یک گزینه را انتخاب کنید.');
         exit();
     }
-    $voicedata = json_decode(file_get_contents("data/voices/$voiceid.json"), true);
-    $voicename = $voicedata['name'];
+    $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
+    $voicename = $voiceinfo['name'];
     if($text == $choices[0]){
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
             'text'=>"لطفا نام جدید را برای ویس « $voicename » ارسال کنید :",
             'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
         ]);
-        $user['voiceedit'] = 'name';
+        $db->query("UPDATE `user` SET `step` = 'editvoice3', `voiceedit` = 'name' WHERE `id` = '{$from_id}' LIMIT 1");
     }elseif($text == $choices[1]){
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
             'text'=>"لطفا ویس جدید جایگزین را برای ویس « $voicename » ارسال کنید :",
             'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
         ]);
-        $user['voiceedit'] = 'replace';
+        $db->query("UPDATE `user` SET `step` = 'editvoice3', `voiceedit` = 'replace' WHERE `id` = '{$from_id}' LIMIT 1");
     }
-    $user['step'] = 'editvoice3';
-    UpdateUser();
 }
 
 elseif($user['step'] == 'editvoice3'){
-    $voiceid = $user['voiceid'];
-    $getvoice = json_decode(file_get_contents("data/voices/$voiceid.json"), true);
+    $voiceid = $user['voicename'];
+    $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
     if($update->message->voice && $user['voiceedit'] == 'replace'){
         $vid = Forward('-1001169964092', $chat_id, $message_id);
         $vr = json_decode($vid, true);
-        $voicename = $getvoice['name'];
-        $getvoice['url'] = 'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']);
-        file_put_contents('data/voices/'.$voiceid.'.json', json_encode($getvoice));
+        $voicename = $voiceinfo['name'];
+        $newurl = 'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']);
+        $newmessageid = $vr['result']['message_id'];
+        $voiceprimarykey = $voiceinfo['id'];
+        $newvoiceuniqueid = $update->message->voice->file_unique_id;
+        $db->query("UPDATE `voices` SET `url` = '{$newurl}', `messageid` = '{$newmessageid}', `unique_id` = '{$newvoiceuniqueid}' WHERE `id` = '{$voiceprimarykey}' LIMIT 1");
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
             'text'=>"✅ ویس ارسالی شما، جایگزین ویس « $voicename » شد.",
             'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
         ]);
-        rename('data/voices/'.$voiceid.'.json', 'data/voices/'.$update->message->voice->file_unique_id.'.json');
         SendMessage($CONFIG['CHANNEL']['LOGID'], "ویس « $voicename » توسط ادمین $from_id با نام $first_name جایگزین ویس دیگری شد.");
     }elseif($text && $user['voiceedit'] == 'name'){
-        $old_name = $getvoice['name'];
-        $getvoice['name'] = $text;
-        file_put_contents('data/voices/'.$voiceid.'.json', json_encode($getvoice));
+        $old_name = $voiceinfo['name'];
+        $db->query("UPDATE `voices` SET `name` = '{$text}' WHERE `unique_id` = '{$voiceid}' LIMIT 1");
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
             'text'=>"✅ نام ویس « $old_name » به نام « $text » تغییر پیدا کرد.",
@@ -537,25 +553,32 @@ elseif($user['step'] == 'editvoice3'){
         ]);
         SendMessage($CONFIG['CHANNEL']['LOGID'], "نام ویس « $old_name » به نام « $text » توسط ادمین $from_id با نام $first_name تغییر پیدا کرد.");
     }
-    $user['step'] = 'none';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'none', `voiceedit` = NULL WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
-    SendMessage($from_id, 'درحال بررسی...');
-    $all_voices = $unaccepted_voice = $accepted_voice = $all_users = 0;
-    foreach(sortandscan('data/voices') as $voice){
-        $get_voice = json_decode(file_get_contents("data/voices/$voice"), true);
-        if($get_voice['accepted']){
-            $accepted_voice++;
+    // SendMessage($from_id, 'درحال بررسی...');
+    $all_voices = $unaccepted_voice = $accepted_voice = $all_users = $private_voices = 0;
+    
+    $all_users = mysqli_num_rows(mysqli_query($db, "SELECT * FROM `user`"));
+    
+    $query = mysqli_query($db, "SELECT * FROM `voices`");
+    $all_voices = mysqli_num_rows($query);
+
+    for ($i=0; $i < $all_voices; $i++) {
+        $thevoice = mysqli_fetch_assoc($query);
+        if($thevoice['mode'] == 'private'){
+            $private_voices++;
         }else{
-            $unaccepted_voice++;
+            if($thevoice['accepted']){
+                $accepted_voice++;
+            }else{
+                $unaccepted_voice++;
+            }
         }
-        $all_voices++;
     }
-    foreach(sortandscan('data/users') as $auser){
-        $all_users++;
-    }
+
+    
     $admins = count($CONFIG['ADMINS']);
     SendMessage($from_id, "📌 آمار ربات اوه پسر درحالت حاضر به شرح زیر میباشد 👇🏻
 
@@ -563,6 +586,7 @@ elseif($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
 🚨 تعداد ادمین های ربات : $admins
 
 🎤 تعداد تمامی ویس ها : $all_voices
+🔐 تعداد ویس های شخصی : $private_voices
 ✅ ویس های تایید شده : $accepted_voice
 ❌ ویس های تایید نشده : $unaccepted_voice
 ");
@@ -585,44 +609,51 @@ elseif($text == '🧐 راهنما'){
 
 
 
-elseif($text == '❣️ ویس های من' or $text == '/myvoices'){
-    $__VOICES = [];
-    foreach (sortandscan('data/voices') as $_VOICE) {
-        $_VOICEINFO = json_decode(file_get_contents('data/voices/'.$_VOICE), true);
-        if($_VOICEINFO['sender'] == $from_id){
-            $__VOICES[] = $_VOICE;
-        }
-    }
-
-    if($__VOICES == []){
+elseif($text == '🗂 ویس های من' or $text == '/myvoices'){
+    $page_limit = 10;
+    $query = mysqli_query($db, "SELECT * FROM `voices` WHERE `sender` = '{$from_id}'");
+    $num = mysqli_num_rows($query);
+    
+    
+    
+    
+    if(!$num){
         SendMessage($chat_id, '⚠️ شما هیچ ویسی در ربات ثبت نکردید !');
         exit();
     }
-    $allvoicescount = count($__VOICES);
     $MyVoicesKey = []; // To store 
 
-    if(count($__VOICES) > 10){
-        $__VOICES = array_splice($__VOICES, 0, 10, true);
+    $voices = [];
+    for ($i=0; $i < $num; $i++) { 
+    	$voices[] = mysqli_fetch_assoc($query);
+    }
+    $voices = array_reverse($voices);
+
+    $pagelimit = gettype($num/$page_limit) == 'integer' ? ($num/$page_limit) : intval($num/$page_limit)+1;
+    if($num > $page_limit){
+        $voices = array_splice($voices, 0, $page_limit, true);;
         $MyVoicesKey[] = [['text'=>'▶️ صفحه بعدی', 'callback_data'=>'myvoicespage_2']];
     }
-
-    foreach ($__VOICES as $uservoice) {
-        $voice_unique_id = str_replace('.json', '', $uservoice);
-        $user_voice_info = json_decode(file_get_contents('data/voices/'.$uservoice), true);
+    
+    foreach ($voices as $user_voice_info) { 
+        if($user_voice_info['mode'] == 'public'){
         if(!$user_voice_info['accepted']){
-            $MyVoicesKey[] = [['text'=>'🕐 '.$user_voice_info['name'], 'callback_data'=>'pendingmode']];
-            continue;
+                $MyVoicesKey[] = [['text'=>'🕐 '.$user_voice_info['name'], 'callback_data'=>'pendingmode']];
+                continue;
+            }
         }
+        if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
         $MyVoicesKey[] = [
-            ['text'=>'🎤 '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
-            ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$voice_unique_id],
+            ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
+            ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$user_voice_info['unique_id']],
         ];
     }
-
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"لیست تمامی ویس های ثبت شما در ربات توسط شما 👇🏻
-🔄 تعداد تمامی ویس های ثبت شده توسط شما : $allvoicescount",
+🔄 تعداد تمامی ویس های ثبت شده توسط شما : $num
+
+📖 صفحه 1 از $pagelimit",
         'reply_markup'=>json_encode([
             'inline_keyboard'=>$MyVoicesKey,
         ])
@@ -636,22 +667,22 @@ elseif($text == '💬 پیام همگانی' && in_array($chat_id, $CONFIG['ADMI
         'text'=>"لطفا پیام مورد نظر خود را ارسال کنید تا برای همه اعضا ارسال شود : (لطفا در ارسال پیام دقت کنید، این بخش فاقد تاییدیه میباشد و به محض ارسال پیام برای همه ارسال میشود)",
         'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
     ]);
-    $user['step'] = 'msg2all';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'msg2all' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($user['step'] == 'msg2all' && ($text !== $backbtn or strtolower($text) !== '/start')){
-    $user['step'] = 'none';
-    UpdateUser();
-    $memberscount = count(sortandscan('data/users'));
+    $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
+    $query = mysqli_query($db, "SELECT * FROM `user`");
+    $memberscount = mysqli_num_rows($query);
     
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"درحال ارسال برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند ارسال کاری انجام ندهید!",
         'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
     ]);
-    foreach(sortandscan('data/users') as $selecteduser){
-        SendMessage(str_replace('.json', '', $selecteduser), $text);
+    for ($i=0; $i < $memberscount; $i++) { 
+    	$u = mysqli_fetch_assoc($query);
+    	SendMessage($u['id'], $text);
     }
     SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات ارسال شد. ✅');
     
@@ -664,21 +695,22 @@ elseif($text == '💬 فوروارد همگانی' && in_array($chat_id, $CONFIG
         'text'=>"لطفا پیام مورد نظر خود را فوروارد کنید تا برای همه اعضا فوروارد شود : (لطفا در ارسال پیام دقت کنید، این بخش فاقد تاییدیه میباشد و به محض ارسال پیام برای همه ارسال میشود)",
         'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
     ]);
-    $user['step'] = 'forward2all';
-    UpdateUser();
+    $db->query("UPDATE `user` SET `step` = 'forward2all' WHERE `id` = '{$from_id}' LIMIT 1");
 }
 
 elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text) !== '/start')){
-    $user['step'] = 'none';
-    UpdateUser();
-    $memberscount = count(sortandscan('data/users'));
+    $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
+    $query = mysqli_query($db, "SELECT * FROM `user`");
+    $memberscount = mysqli_num_rows($query);
+    
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>"درحال فوروارد برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند فوروارد کاری انجام ندهید!",
         'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
     ]);
-    foreach(sortandscan('data/users') as $selecteduser){
-        Forward(str_replace('.json', '', $selecteduser), $from_id, $message_id);
+    for ($i=0; $i < $memberscount; $i++) { 
+    	$u = mysqli_fetch_assoc($query);
+    	Forward($u['id'], $from_id, $message_id);
     }
     SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات فوروارد شد. ✅');
 }
@@ -687,7 +719,8 @@ elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text
 elseif(!is_null($inline_text)){
     $results = [];
     $inlineuserid = $update->inline_query->from->id;
-    if(!is_file("data/users/$inlineuserid.json")){
+    $userinline = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$inlineuserid}' LIMIT 1"));
+    if(!$userinline){
         Bot('answerInlineQuery', [
             'inline_query_id' => $membercalls,
             'results' => json_encode($results),
@@ -696,30 +729,22 @@ elseif(!is_null($inline_text)){
         ]);
         exit();
     }
-    if(!in_array($tch,['member','creator','administrator'])){
-        Bot('answerInlineQuery', [
-            'inline_query_id' => $membercalls,
-            'results' => json_encode($results),
-            'switch_pm_text'=> 'لطفا وارد کانال اوه پسر شوید',
-            'switch_pm_parameter'=> 'jointhechannel'
-        ]);
-        exit();
-    }
-    $voices = array_diff(sortandscan('data/voices'), ['.', '..', '.json']);
-    if(strlen($inline_text) < 1){
-    $voices = array_slice($voices, 0, 20, true);
-    }
-    foreach($voices as $thevoice){
-        $voiceinfo = json_decode(file_get_contents("data/voices/$thevoice"), true);
+    
+    $query = mysqli_query($db, "SELECT * FROM `voices`");
+    $num = mysqli_num_rows($query);
+    for ($i=0; $i < $num; $i++) { 
+    	$voiceinfo = mysqli_fetch_assoc($query);
+        if($voiceinfo['mode'] == 'private' && $voiceinfo['sender'] != $inlineuserid){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
         if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
         $results[] = [
             'type' => 'voice',
-            'id' => base64_encode(rand()),
+            'id' => $voiceinfo['unique_id'],
             'voice_url' =>  $voiceinfo['url'],
-            'title' => $voiceinfo['name'],
+            'title' => $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'],
         ];
     }
+    $results = array_reverse($results);
     $dataval = [
         'inline_query_id' => $membercalls,
         'results' => json_encode($results)
@@ -739,8 +764,12 @@ elseif(!is_null($inline_text)){
 elseif($update->message->voice){
     $vid = $update->message->voice->file_unique_id;
     $found = true;
-    if(!is_file("data/voices/$vid.json")) $found = false;
-    $voiceinfo = json_decode(file_get_contents("data/voices/$vid.json"), true);
+    $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$vid}' LIMIT 1"));
+    if(!$voiceinfo) $found = false;
+    if($voiceinfo['mode'] == 'private' && intval($voiceinfo['sender']) !== intval($chat_id)){
+        SendMessage($chat_id, '👀 اوه پسر متاسفم! این یه ویس شخصیه که توسط یکی از کاربرای ربات ثبت شده و تو نمیتونی ازش استفاده کنی');
+        exit();
+    }
     if(!$voiceinfo['accepted']) $found = false;
     if($message->via_bot->username !== 'OhPesarBot') $found = false;
     if(!$found && $user['step'] == 'none'){
@@ -759,5 +788,9 @@ elseif($update->message->voice){
 }
 
 
+elseif($update->chosen_inline_result){
+    $voiceid = $update->chosen_inline_result->result_id;
+    $db->query("UPDATE `voices` SET `usecount` = `usecount` + 1 WHERE `unique_id` = '{$voiceid}' LIMIT 1");
+}
 
 ?>
