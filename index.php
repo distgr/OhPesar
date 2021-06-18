@@ -1,5 +1,18 @@
 <?php
 
+$allowed_ipranges = [
+    ['lower' => '149.154.160.0', 'upper' => '149.154.175.255'],
+    ['lower' => '91.108.4.0',    'upper' => '91.108.7.255'],
+];
+$ip_dec = (float) sprintf("%u", ip2long($_SERVER['REMOTE_ADDR']));
+$ok = false;
+foreach ($allowed_ipranges as $iprange) if (!$ok) {
+    $lower_dec = (float) sprintf("%u", ip2long($iprange['lower']));
+    $upper_dec = (float) sprintf("%u", ip2long($iprange['upper']));
+    if ($ip_dec >= $lower_dec and $ip_dec <= $upper_dec) $ok = true;
+}
+if (!$ok) die();
+
 ob_start();
 error_reporting(0);
 date_default_timezone_set('Asia/Tehran');
