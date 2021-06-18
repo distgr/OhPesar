@@ -90,6 +90,7 @@ if (!$user) {
 # --------------------------- #
 
 if(in_array($from_id, $CONFIG['ADMINS'])){
+        $home[] = [['text'=>"⚙️ تنظیمات"]];
         $home[] = [['text'=>"📍 پنل مدیریت"]];
 }
 
@@ -107,6 +108,30 @@ if(strtolower($text) == '/start' or $text == $backbtn){
     ]);
     $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
     exit();
+}
+
+elseif($text == '⚙️ تنظیمات'){
+    $sortby = [
+        'oldest'=>'',
+        'newest'=>'',
+        'popularest'=>'',
+        'private'=>''
+    ];
+    if($user['sortby'] == 'newest'){ $sortby['newest'] = '✅'; }
+    elseif($user['sortby'] == 'popularest'){ $sortby['popularest'] = '✅'; }
+    elseif($user['sortby'] == 'private'){ $sortby['private'] = '✅'; }
+    else{ $sortby['oldest'] = '✅'; }
+
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>"⚙️ به تنظیمات ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻",
+        'reply_markup'=>json_encode([
+            'inline_keyboard'=>[
+                [['text'=>$sortby['newest'].' جدیدترین ویس ها', 'callback_data'=>'setsortby_newest'], ['text'=>$sortby['oldest'].' قدیمیترین ویس ها', 'callback_data'=>'setsortby_oldest']],
+                [['text'=>$sortby['popularest'].' محبوبترین ویس ها', 'callback_data'=>'setsortby_popularest']],
+            ],
+        ])
+    ]);
 }
 
 elseif($text == '🆕 جدیدترین ویس ها'){
@@ -285,6 +310,34 @@ elseif($callback_query){
             'callback_query_id' => $update->callback_query->id,
             'text' => "🕐 این ویس درحالت بررسی قرار دارد و هنوز توسط تایید نشده است. ویس شما تا زمانی که تایید نشود قابل استفاده نمیباشد.",
             'show_alert' => true
+        ]);
+    }
+    if(strpos($data, 'setsortby_') !== false){
+        $mode = str_replace('setsortby_', '', $data);
+
+        $db->query("UPDATE `user` SET `sortby` = '{$mode}' WHERE `user`.`id` = $chatid;");
+
+        $sortby = [
+            'oldest'=>'',
+            'newest'=>'',
+            'popularest'=>'',
+            'private'=>''
+        ];
+        if($mode == 'newest'){ $sortby['newest'] = '✅'; }
+        elseif($mode == 'popularest'){ $sortby['popularest'] = '✅'; }
+        elseif($mode == 'private'){ $sortby['private'] = '✅'; }
+        else{ $sortby['oldest'] = '✅'; }
+    
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=>$messageid,
+            'text'=>"⚙️ به تنظیمات ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>[
+                    [['text'=>$sortby['newest'].' جدیدترین ویس ها', 'callback_data'=>'setsortby_newest'], ['text'=>$sortby['oldest'].' قدیمیترین ویس ها', 'callback_data'=>'setsortby_oldest']],
+                    [['text'=>$sortby['popularest'].' محبوبترین ویس ها', 'callback_data'=>'setsortby_popularest']],
+                ],
+            ])
         ]);
     }
     if(strpos($data, 'myvoicespage_') !== false){
@@ -577,6 +630,14 @@ elseif($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
             }
         }
     }
+    
+    $sizeq = mysqli_query($db, "SHOW TABLE STATUS");  
+    $dbsize = 0;  
+    while($row = mysqli_fetch_assoc($sizeq)) {  
+        $dbsize += $row["Data_length"] + $row["Index_length"];  
+    }
+    $decimals = 2;  
+    $mbytes = number_format($dbsize/(1024*1024), $decimals);
 
     
     $admins = count($CONFIG['ADMINS']);
@@ -589,6 +650,8 @@ elseif($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
 🔐 تعداد ویس های شخصی : $private_voices
 ✅ ویس های تایید شده : $accepted_voice
 ❌ ویس های تایید نشده : $unaccepted_voice
+
+🗂 حجم کل دیتابیس : $mbytes مگابایت
 ");
     SendMessage($CONFIG['CHANNEL']['LOGID'], "آمار ربات توسط $from_id با نام $first_name گرفته شد.");
 }
@@ -730,13 +793,21 @@ elseif(!is_null($inline_text)){
         exit();
     }
     
-    $query = mysqli_query($db, "SELECT * FROM `voices`");
+    if($userinline['sortby'] == 'newest'){
+        $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` DESC";
+    }elseif($userinline['sortby'] == 'popularest'){
+        $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`usecount` DESC";
+    }else{
+        $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` ASC";
+    }
+    $query = mysqli_query($db, $querystring);
     $num = mysqli_num_rows($query);
     for ($i=0; $i < $num; $i++) { 
     	$voiceinfo = mysqli_fetch_assoc($query);
-        if($voiceinfo['mode'] == 'private' && $voiceinfo['sender'] != $inlineuserid){ continue; }
+        if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
         if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
+        
         $results[] = [
             'type' => 'voice',
             'id' => $voiceinfo['unique_id'],
@@ -744,7 +815,6 @@ elseif(!is_null($inline_text)){
             'title' => $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'],
         ];
     }
-    $results = array_reverse($results);
     $dataval = [
         'inline_query_id' => $membercalls,
         'results' => json_encode($results)
