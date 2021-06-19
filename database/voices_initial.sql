@@ -2,7 +2,7 @@ CREATE TABLE `voices` (
     `id` int(10) NOT NULL,
     `unique_id` char(250) NOT NULL,
     `accepted` char(200) DEFAULT '0',
-    `name` char(200) NOT NULL,
+    `name` char(50) NOT NULL,
     `url` char(200) NOT NULL,
     `sender` char(200) NOT NULL,
     `messageid` char(200) NOT NULL,
