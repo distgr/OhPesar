@@ -101,9 +101,9 @@ if (!$user) {
     $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$from_id}', 'none')");
 }
 # --------------------------- #
+$home[] = [['text'=>"⚙️ تنظیمات"]];
 
 if(in_array($from_id, $CONFIG['ADMINS'])){
-        $home[] = [['text'=>"⚙️ تنظیمات"]];
         $home[] = [['text'=>"📍 پنل مدیریت"]];
 }
 
@@ -213,8 +213,8 @@ elseif($user['step'] == 'sendvoice1' && $text !== $backbtn){
         SendMessage($from_id, 'نام ویس حداقل باید دارای 3 کاراکتر باشد');
         exit();
     }
-    if(strlen($text) > 60){
-        SendMessage($from_id, 'نام ویس حداکثر باید دارای 60 کاراکتر باشد');
+    if(strlen($text) > 45){
+        SendMessage($from_id, 'نام ویس حداکثر باید دارای 45 کاراکتر باشد');
         exit();
     }
     $db->query("UPDATE `user` SET `step` = 'sendvoice2', `voicename` = '{$text}' WHERE `id` = '{$from_id}' LIMIT 1");
@@ -327,7 +327,17 @@ elseif($callback_query){
     }
     if(strpos($data, 'setsortby_') !== false){
         $mode = str_replace('setsortby_', '', $data);
-
+        $userinline = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$chatid}' LIMIT 1"));
+        
+        if($userinline['sortby'] == $mode){
+            bot('answercallbackquery', [
+                'callback_query_id' => $update->callback_query->id,
+                'text' => "⚠️ تنظیمات نمایش از قبل بر روی این گزینه تنظیم بود",
+                'show_alert' => false
+            ]);
+            exit();
+        }
+        
         $db->query("UPDATE `user` SET `sortby` = '{$mode}' WHERE `user`.`id` = $chatid;");
 
         $sortby = [
@@ -340,7 +350,13 @@ elseif($callback_query){
         elseif($mode == 'popularest'){ $sortby['popularest'] = '✅'; }
         elseif($mode == 'private'){ $sortby['private'] = '✅'; }
         else{ $sortby['oldest'] = '✅'; }
-    
+        
+        bot('answercallbackquery', [
+                'callback_query_id' => $update->callback_query->id,
+                'text' => "✅ تنظیم نمایش ویس ها بروز شد. ",
+                'show_alert' => false
+            ]);
+        
         Bot('EditMessageText',[
             'chat_id'=>$chatid,
             'message_id'=>$messageid,
@@ -793,6 +809,7 @@ elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text
 
 
 elseif(!is_null($inline_text)){
+    $inline_text = trim($inline_text);
     $results = [];
     $inlineuserid = $update->inline_query->from->id;
     $userinline = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$inlineuserid}' LIMIT 1"));
@@ -815,7 +832,7 @@ elseif(!is_null($inline_text)){
     }
     $query = mysqli_query($db, $querystring);
     $num = mysqli_num_rows($query);
-    for ($i=0; $i < $num; $i++) { 
+    for ($i=0; $i < $num; $i++) {
     	$voiceinfo = mysqli_fetch_assoc($query);
         if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
@@ -828,6 +845,7 @@ elseif(!is_null($inline_text)){
             'title' => $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'],
         ];
     }
+    $results = array_splice($results, 0, 20, true);
     $dataval = [
         'inline_query_id' => $membercalls,
         'results' => json_encode($results)
