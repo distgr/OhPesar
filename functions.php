@@ -52,22 +52,3 @@ function getChatMember($channel, $id = ""){
          return false;
      }
 }
-
-function UpdateUser(){
-    global $user, $from_id;
-    file_put_contents("data/users/$from_id.json", json_encode($user));
-}
-function sortandscan($dir) {
-    $ignored = array('.', '..', '.svn', '.htaccess');
-
-    $files = array();    
-    foreach (scandir($dir) as $file) {
-        if (in_array($file, $ignored)) continue;
-        $files[$file] = filemtime($dir . '/' . $file);
-    }
-
-    arsort($files);
-    $files = array_keys($files);
-
-    return ($files) ? $files : false;
-}
