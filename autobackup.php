@@ -4,8 +4,6 @@ $CONFIG = json_decode(file_get_contents('config.json'), true);
 
 define('API_KEY', $CONFIG['TOKEN']);
 
-//-----------------------------------------
-
 function Bot($method,$datas=[]){
     $url = "https://api.telegram.org/bot".API_KEY."/".$method;
     $ch = curl_init();
@@ -20,20 +18,9 @@ function Bot($method,$datas=[]){
     }
 }
 
-$dbhost = 'localhost';
-$dbuser = $CONFIG['DATABASE']['USERNAME'];
-$dbpass = $CONFIG['DATABASE']['PASSWORD'];
-$dbname = $CONFIG['DATABASE']['DBNAME'];
-$tables = '*';
-
-//Call the core function
-backup_tables($dbhost, $dbuser, $dbpass, $dbname, $tables);
-
-//Core function
 function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
     $link = mysqli_connect($host,$user,$pass, $dbname);
 
-    // Check connection
     if (mysqli_connect_errno())
     {
         echo "Failed to connect to MySQL: " . mysqli_connect_error();
@@ -42,23 +29,16 @@ function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
 
     mysqli_query($link, "SET NAMES 'utf8'");
 
-    //get all of the tables
-    if($tables == '*')
+
+    $tables = array();
+    $result = mysqli_query($link, 'SHOW TABLES');
+    while($row = mysqli_fetch_row($result))
     {
-        $tables = array();
-        $result = mysqli_query($link, 'SHOW TABLES');
-        while($row = mysqli_fetch_row($result))
-        {
-            $tables[] = $row[0];
-        }
-    }
-    else
-    {
-        $tables = is_array($tables) ? $tables : explode(',',$tables);
+        $tables[] = $row[0];
     }
 
+
     $return = '';
-    //cycle through
     foreach($tables as $table)
     {
         $result = mysqli_query($link, 'SELECT * FROM '.$table);
@@ -70,9 +50,8 @@ function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
         $return.= "\n\n".$row2[1].";\n\n";
         $counter = 1;
 
-        //Over tables
         for ($i = 0; $i < $num_fields; $i++) 
-        {   //Over rows
+        {
             while($row = mysqli_fetch_row($result))
             {   
                 if($counter == 1){
@@ -81,7 +60,6 @@ function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
                     $return.= '(';
                 }
 
-                //Over fields
                 for($j=0; $j<$num_fields; $j++) 
                 {
                     $row[$j] = addslashes($row[$j]);
@@ -101,7 +79,6 @@ function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
         $return.="\n\n\n";
     }
 
-    //save file
     $fileName = 'ohpesar-dbbackup-'.time().'-'.(md5(implode(',',$tables))).'.zip';
     $handle = fopen($fileName,'w+');
     fwrite($handle,$return);
@@ -129,17 +106,18 @@ function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
         }
         
         
-        $caption = "Backup from OhPesar Database
+        Bot('SendDocument',['chat_id'=>'-1001491735326', 'document'=>$document,'caption'=>"Backup from OhPesar Database
         
 Bot users : $all_users
 
 Bot Voices : $all_voices
 Private Voices : $private_voices
 Accepted Voices : $accepted_voice
-Unaccepted Voices : $unaccepted_voice";
-        Bot('SendDocument',['chat_id'=>'-1001491735326', 'document'=>$document,'caption'=>$caption]);
+Unaccepted Voices : $unaccepted_voice"]);
         sleep(1);
         unlink($fileName);
         exit;
     }
 }
+
+backup_tables('localhost', $CONFIG['DATABASE']['USERNAME'], $CONFIG['DATABASE']['PASSWORD'], $CONFIG['DATABASE']['DBNAME'], '*');
