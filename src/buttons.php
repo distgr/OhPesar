@@ -12,24 +12,22 @@ $adminpanel = [
     [['text'=>"🖥 آمار"]],
     [['text'=>"🗑 حذف ویس"], ['text'=>"✏️ ویرایش ویس"]],
     [['text'=>"💬 پیام همگانی"], ['text'=>"💬 فوروارد همگانی"]],
-    [['text'=>$backbtn]],
+    [['text'=>$backbtn]]
 ];
 
 $privateorpublic = [
     [['text'=>"🔓 عمومی"], ['text'=>"🔐 خصوصی"]],
-    [['text'=>$backbtn]],
+    [['text'=>$backbtn]]
 ];
 
 $editvoicepanel = [
     [['text'=>"✏️ ویرایش نام ویس"], ['text'=>"✏️ ویرایش صدای ویس"]],
-    [['text'=>$backbtn]],
+    [['text'=>$backbtn]]
 ];
 
 $yesnopanel = [
     [['text'=>"✅ بله"], ['text'=>"❌ خیر"]],
-    [['text'=>$backbtn]],
+    [['text'=>$backbtn]]
 ];
 
-$back = [
-    [['text'=>$backbtn]],
-];
+$back = [[['text'=>$backbtn]]];

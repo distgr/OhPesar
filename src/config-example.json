@@ -5,7 +5,9 @@
         "DATABASE": "", // Channel Id Without @
         "DATABASEID": "", // Channel numeric id
         "LOGID": "",  // Channel numeric id,
-        "CONTACT" : "" // Contact us channel
+        "VOICEACCEPT": "", // Voice accept channel numeric id
+        "CONTACTID": "", // Contact us channel numeric id
+        "SERVERURL": "https://yourserver.com/.../OhPesar/" // Source folder url in server
     },
     "DATABASE":{
         "DBNAME": "", // Database name
