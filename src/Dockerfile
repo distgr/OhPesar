@@ -1,5 +1,5 @@
 FROM php:7.4-apache
-LABEL MAINTAINER="https://github.com/ThisIsMatin"
+LABEL MAINTAINER="https://github.com/Jeengli"
 
 RUN mkdir /OhPesar
 WORKDIR /OhPesar

@@ -73,20 +73,12 @@ if(isset($update->callback_query)){
     $lastname = $callback_query->from->last_name;
     $cusername = $callback_query->from->username;
     $membercall = $callback_query->id;
-    // $tch = json_decode(Bot('getChatMember', [
-    //     'chat_id'=> '@'.$channel,
-    //     'user_id'=>$fromid
-    // ]), true)['result']['status'];
 }
 if(isset($update->inline_query)){
     $inline = $update->inline_query;
     $inline_text = $inline->query;
     $membercalls = $inline->id;
     $id_from = $inline->from->id;
-    // $tch = json_decode(Bot('getChatMember', [
-    //     'chat_id'=> '@'.$channel,
-    //     'user_id'=>$id_from
-    // ]), true)['result']['status'];
 }
 
 
@@ -266,12 +258,12 @@ elseif($user['step'] == 'sendvoice3' && $text !== $backbtn){
         }
         exit();
     }
-    $vid = Forward('-1001169964092', $chat_id, $message_id);
+    $vid = Forward($CONFIG['CHANNEL']['DATABASEID'], $chat_id, $message_id);
     $vr = json_decode($vid, true);
     if($user['voicemode'] == 'public'){ $accepted_var = false; }else{ $accepted_var = true; }
     $id = strval(rand(11111,99999));
     $definedvoicename = $user['voicename'];
-    $voicedburl = 'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']);
+    $voicedburl = 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']);
     $voicemsgid = $vr['result']['message_id'];
     $thevoicemode = $user['voicemode'];
     $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '{$accepted_var}', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
@@ -289,8 +281,8 @@ elseif($user['step'] == 'sendvoice3' && $text !== $backbtn){
         if(isset($username)){
             $senderusername = '🆔 آیدی ارسال کننده : @'.$username;
         }
-        SendVoice('-1001425492536',
-        'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']), 
+        SendVoice($CONFIG['CHANNEL']['VOICEACCEPT'],
+        'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']), 
         json_encode([
             'inline_keyboard'=>[
             [['text'=>"✅",'callback_data'=>'accept-'.$systemid], ['text'=>"❌",'callback_data'=>'reject-'.$systemid]],
@@ -611,10 +603,10 @@ elseif($user['step'] == 'editvoice3'){
     $voiceid = $user['voicename'];
     $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
     if($update->message->voice && $user['voiceedit'] == 'replace'){
-        $vid = Forward('-1001169964092', $chat_id, $message_id);
+        $vid = Forward($CONFIG['CHANNEL']['DATABASEID'], $chat_id, $message_id);
         $vr = json_decode($vid, true);
         $voicename = $voiceinfo['name'];
-        $newurl = 'https://t.me/VoiceDatabaseOfOhPesar/'.strval($vr['result']['message_id']);
+        $newurl = 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']);
         $newmessageid = $vr['result']['message_id'];
         $voiceprimarykey = $voiceinfo['id'];
         $newvoiceuniqueid = $update->message->voice->file_unique_id;
@@ -687,7 +679,7 @@ elseif($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
 
 elseif($text == '🧐 راهنما'){
     $cap = '👈🏻 برای استفاده از ربات اوه پسر و ارسال ویس ها داخل چت مورد نظر، کافیه که عبارت زیر رو مانند عکس همراه با یک فاصله تایپ کنید :
-@OhPesar
+@'.$CONFIG['CHANNEL']['OFFICIAL'].'
 حتما حواست باشه بعد از اینکه این آیدی رو نوشتی یه فاصله هم بعدش بزاری تا لیست آخرین ویس های ثبت شده در ربات برات باز بشه 😛
 😎بعد میتونی با نوشتن یک عبارت، ویس مورد نظرتو هم جستوجو کنی
 
@@ -695,7 +687,7 @@ elseif($text == '🧐 راهنما'){
 
 
 راستی! جدای اون روش بالایی که بهت گفتم، میتونی با کلیک بر روی دکمه پایین هم چت مورد نظرتو انتخاب کنی تا منوی ربات برات باز بشه 👇🏻';
-    SendPhoto($chat_id, 'https://t.me/VoiceDatabaseOfOhPesar/76', json_encode(['inline_keyboard'=>[[['text'=>"🎤 ارسال یک ویس", 'switch_inline_query'=>'']]]]), $cap, null);
+    SendPhoto($chat_id, 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/76', json_encode(['inline_keyboard'=>[[['text'=>"🎤 ارسال یک ویس", 'switch_inline_query'=>'']]]]), $cap, null);
 }
 
 
@@ -931,7 +923,7 @@ if($user['step'] == 'contact' && $text !== $backbtn){
     $ContactMsgBtn[] = [['text'=>'☑️ '.$from_id, 'callback_data'=>'nothing']];
     
     Bot('sendMessage',[
-        'chat_id'=>'-1001292683389',
+        'chat_id'=>$CONFIG['CHANNEL']['CONTACTID'],
         'text'=>$text,
         'reply_markup'=>json_encode([
             'inline_keyboard'=>$ContactMsgBtn
@@ -944,8 +936,8 @@ if($user['step'] == 'contact' && $text !== $backbtn){
 if($update->channel_post->reply_to_message && $update->channel_post->sender_chat->title == 'OhPesarContact'){
     $senderid = str_replace('☑️ ', '', end($update->channel_post->reply_to_message->reply_markup->inline_keyboard)[0]->text);
     if($update->channel_post->voice){
-        $finfo = Forward('-1001169964092', $update->channel_post->chat->id, $update->channel_post->message_id);
-        SendVoice($senderid, 'https://t.me/VoiceDatabaseOfOhPesar/'.json_decode($finfo)->result->message_id);
+        $finfo = Forward($CONFIG['CHANNEL']['DATABASEID'], $update->channel_post->chat->id, $update->channel_post->message_id);
+        SendVoice($senderid, 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.json_decode($finfo)->result->message_id);
     }elseif($update->channel_post->text){
         SendMessage($senderid, $update->channel_post->text);
     }else{

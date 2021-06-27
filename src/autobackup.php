@@ -19,6 +19,7 @@ function Bot($method,$datas=[]){
 }
 
 function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
+    global $CONFIG;
     $link = mysqli_connect($host,$user,$pass, $dbname);
 
     if (mysqli_connect_errno())
@@ -83,7 +84,7 @@ function backup_tables($host, $user, $pass, $dbname, $tables = '*') {
     $handle = fopen($fileName,'w+');
     fwrite($handle,$return);
     if(fclose($handle)){
-        $document = 'https://server-me.ir/bots/theohpesar/'.$fileName;
+        $document = $CONFIG['SERVERURL'].$fileName;
         $db = $link;
         $all_voices = $unaccepted_voice = $accepted_voice = $all_users = $private_voices = 0;
     
