@@ -100,8 +100,8 @@ if(isset($from_id))
 if (!$user) {
     $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$from_id}', 'none')");
 }
+
 # --------------------------- #
-$home[] = [['text'=>"⚙️ تنظیمات"]];
 
 if(in_array($from_id, $CONFIG['ADMINS'])){
         $home[] = [['text'=>"📍 پنل مدیریت"]];
@@ -109,7 +109,7 @@ if(in_array($from_id, $CONFIG['ADMINS'])){
 
 # --------------------------- #
 
-if(strtolower($text) == '/start' or $text == $backbtn){
+if(strtolower($text) == '/start' or $text == $backbtn or $text == '/start startforuse'){
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>'اوه پسر! باورم نمیشه! خیلی خوش اومدی😦
@@ -763,6 +763,7 @@ elseif($text == '💬 پیام همگانی' && in_array($chat_id, $CONFIG['ADMI
 }
 
 elseif($user['step'] == 'msg2all' && ($text !== $backbtn or strtolower($text) !== '/start')){
+    $to_edit = $message_id+2;
     $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
     $query = mysqli_query($db, "SELECT * FROM `user`");
     $memberscount = mysqli_num_rows($query);
@@ -772,9 +773,18 @@ elseif($user['step'] == 'msg2all' && ($text !== $backbtn or strtolower($text) !=
         'text'=>"درحال ارسال برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند ارسال کاری انجام ندهید!",
         'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
     ]);
+    SendMessage($chat_id, "درحال انجام : 0/$memberscount");
     for ($i=0; $i < $memberscount; $i++) { 
     	$u = mysqli_fetch_assoc($query);
-    	SendMessage($u['id'], $text);
+        Bot('sendMessage',[
+            'chat_id'=>$u['id'],
+            'text'=>$text,
+            'reply_markup'=>json_encode(['keyboard'=>$home ,'resize_keyboard'=>true])
+        ]);
+        $ufi = $u['id'];
+        $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$ufi}' LIMIT 1");
+        $ii = $i+1;
+        EditMessage($chat_id, $to_edit, "درحال انجام : $ii/$memberscount");
     }
     SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات ارسال شد. ✅');
     
@@ -791,6 +801,7 @@ elseif($text == '💬 فوروارد همگانی' && in_array($chat_id, $CONFIG
 }
 
 elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text) !== '/start')){
+    $to_edit = $message_id+2;
     $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
     $query = mysqli_query($db, "SELECT * FROM `user`");
     $memberscount = mysqli_num_rows($query);
@@ -800,9 +811,12 @@ elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text
         'text'=>"درحال فوروارد برای تمامی $memberscount ممبر... لطفا برای بهبود سرعت تا تکمیل فرایند فوروارد کاری انجام ندهید!",
         'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
     ]);
+    SendMessage($chat_id, "درحال انجام : 0/$memberscount");
     for ($i=0; $i < $memberscount; $i++) { 
     	$u = mysqli_fetch_assoc($query);
     	Forward($u['id'], $from_id, $message_id);
+        $ii = $i+1;
+        EditMessage($chat_id, $to_edit, "درحال انجام : $ii/$memberscount");
     }
     SendMessage($chat_id, 'پیام مورد نظر برای همه اعضای ربات فوروارد شد. ✅');
 }
@@ -893,5 +907,38 @@ elseif($update->chosen_inline_result){
     $voiceid = $update->chosen_inline_result->result_id;
     $db->query("UPDATE `voices` SET `usecount` = `usecount` + 1 WHERE `unique_id` = '{$voiceid}' LIMIT 1");
 }
+
+if($text == '💬 ارتباط با مدیریت'){
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>'💭 به بخش ارسال پیام به مدیریت ربات اوه پسر خوش آمدید. لطفا پیام خود را ارسال کنید تا پیامتان به دست مدیریت و ادمین های ربات ارسال شود.',
+        'reply_markup'=>json_encode(['keyboard'=>$back, 'resize_keyboard'=>true])
+    ]);
+    $db->query("UPDATE `user` SET `step` = 'contact' WHERE `id` = '{$from_id}' LIMIT 1");
+}
+
+if($user['step'] == 'contact' && $text !== $backbtn){
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>'✅ پیام شما با موفقیت برای تیم مدیریت ربات اوه پسر ارسال شد.',
+        'reply_markup'=>json_encode(['keyboard'=>$home, 'resize_keyboard'=>true])
+    ]);
+    $ContactMsgBtn = [];
+    $ContactMsgBtn[] = [['text'=>'👤 '.$first_name, 'callback_data'=>'nothing']];
+    if($username){
+        $ContactMsgBtn[] = [['text'=>'🆔 @'.$username, 'url'=>'https://t.me/'.$username]];
+    }
+    $ContactMsgBtn[] = [['text'=>'☑️ '.$from_id, 'callback_data'=>'nothing']];
+    
+    Bot('sendMessage',[
+        'chat_id'=>'-1001292683389',
+        'text'=>$text,
+        'reply_markup'=>json_encode([
+            'inline_keyboard'=>$ContactMsgBtn
+        ])
+    ]);
+    $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
+}
+
 
 ?>
