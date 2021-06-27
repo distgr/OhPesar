@@ -4,7 +4,8 @@
         "OFFICIAL": "", // Channel Id Without @
         "DATABASE": "", // Channel Id Without @
         "DATABASEID": "", // Channel numeric id
-        "LOGID": "",  // Channel numeric id
+        "LOGID": "",  // Channel numeric id,
+        "CONTACT" : "" // Contact us channel
     },
     "DATABASE":{
         "DBNAME": "", // Database name
