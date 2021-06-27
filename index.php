@@ -941,4 +941,27 @@ if($user['step'] == 'contact' && $text !== $backbtn){
 }
 
 
+if($update->channel_post->reply_to_message && $update->channel_post->sender_chat->title == 'OhPesarContact'){
+    $senderid = str_replace('☑️ ', '', end($update->channel_post->reply_to_message->reply_markup->inline_keyboard)[0]->text);
+    if($update->channel_post->voice){
+        $finfo = Forward('-1001169964092', $update->channel_post->chat->id, $update->channel_post->message_id);
+        SendVoice($senderid, 'https://t.me/VoiceDatabaseOfOhPesar/'.json_decode($finfo)->result->message_id);
+    }elseif($update->channel_post->text){
+        SendMessage($senderid, $update->channel_post->text);
+    }else{
+        exit();
+    }
+    Bot('editMessageReplyMarkup',[
+        'chat_id'=>$update->channel_post->chat->id,
+        'message_id'=> $update->channel_post->message_id,
+        'reply_markup'=>json_encode([
+        'inline_keyboard'=>[
+        [['text'=>'✔️ پیام ارسال شد.','callback_data'=>'nothing']],
+        ],
+        ])
+    ]);
+    
+}
+
+
 ?>
