@@ -338,7 +338,7 @@ elseif($callback_query){
                 'text'=>"ویس « $voicename » به حالت خصوصی تغییر پیدا کرد. درصورتی که میخواهید مجدد این ویس را به حالت عمومی تغییر دهید، بدون نیاز به تایید مجدد میتوانید این کار را انجام دهید.",
                 'reply_markup'=>json_encode([
                     'inline_keyboard'=>[
-                        [['text'=>"🔙 بازگشت", 'callback_data'=>'voicesettings_'.$page_num.'_'.$pagenum]],
+                        [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$pagenum]],
                     ],
                 ])
             ]);
@@ -351,7 +351,7 @@ elseif($callback_query){
                     'text'=>"ویس « $voicename » به حالت عمومی تغییر پیدا کرد. (توجه: این ویس یکبار توسط مدیریت تایید شده و اکنون دیگر نیازی به تایید مجدد نیست)",
                     'reply_markup'=>json_encode([
                         'inline_keyboard'=>[
-                            [['text'=>"🔙 بازگشت", 'callback_data'=>'voicesettings_'.$page_num.'_'.$pagenum]],
+                            [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$pagenum]],
                         ],
                     ])
                 ]);
@@ -407,17 +407,27 @@ $senderusername"
             $changemode_text = "🔓 عمومی کردن ویس";
         }
 
+       
+
+        $voicesettings_btn = [
+            [['text'=>"💬 اطلاعات ویس", 'callback_data'=>'aboutvoice_'.$voice_unique_id]],
+            [['text'=>"🗑 حذف ویس", 'callback_data'=>'removebyuser_'.$voice_unique_id]],
+            [['text'=>$changemode_text, 'callback_data'=>'changemode_'.$voice_unique_id.'_'.$page_num]],
+        ];
+
+        if($page_num == '0'){
+            $voicesettings_btn[] = [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$voicename]];
+        }else{
+            $voicesettings_btn[] = [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$page_num]];
+        }
+
+
         Bot('EditMessageText',[
             'chat_id'=>$chatid,
             'message_id'=> $messageid,
             'text'=>"به صفحه تنظیمات ویس « $voicename » خوش آمدید. لطفا از دکمه های زیر، یک مورد را انتخاب کنید 👇🏻",
             'reply_markup'=>json_encode([
-                'inline_keyboard'=>[
-                    [['text'=>"💬 اطلاعات ویس", 'callback_data'=>'aboutvoice_'.$voice_unique_id]],
-                    [['text'=>"🗑 حذف ویس", 'callback_data'=>'removebyuser_'.$voice_unique_id]],
-                    [['text'=>$changemode_text, 'callback_data'=>'changemode_'.$voice_unique_id.'_'.$page_num]],
-                    [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$page_num]],
-                ],
+                'inline_keyboard'=>$voicesettings_btn,
             ])
         ]);
     }
@@ -1034,13 +1044,17 @@ elseif($update->message->voice){
         SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
         exit();
     }
+    $voiceload_btns = [
+        [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$voiceinfo['name']]]
+    ];
+    if(intval($voiceinfo['sender']) == intval($chat_id)){
+        $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings_'.$vid.'_00']];
+    }
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
         'text'=>'🎤 نام ویس ارسالی : '.$voiceinfo['name'],
         'reply_markup'=>json_encode([
-        'inline_keyboard'=>[
-            [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$voiceinfo['name']]]
-        ],
+        'inline_keyboard'=>$voiceload_btns,
         ])
     ]);
 }
