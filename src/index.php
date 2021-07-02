@@ -73,16 +73,21 @@ if(isset($update->callback_query)){
     $lastname = $callback_query->from->last_name;
     $cusername = $callback_query->from->username;
     $membercall = $callback_query->id;
+    // $tch = json_decode(Bot('getChatMember', [
+    //     'chat_id'=> '@'.$channel,
+    //     'user_id'=>$fromid
+    // ]), true)['result']['status'];
 }
 if(isset($update->inline_query)){
     $inline = $update->inline_query;
     $inline_text = $inline->query;
     $membercalls = $inline->id;
     $id_from = $inline->from->id;
+    // $tch = json_decode(Bot('getChatMember', [
+    //     'chat_id'=> '@'.$channel,
+    //     'user_id'=>$id_from
+    // ]), true)['result']['status'];
 }
-
-
-
 
 # --------------------------- #
 
@@ -260,13 +265,12 @@ elseif($user['step'] == 'sendvoice3' && $text !== $backbtn){
     }
     $vid = Forward($CONFIG['CHANNEL']['DATABASEID'], $chat_id, $message_id);
     $vr = json_decode($vid, true);
-    if($user['voicemode'] == 'public'){ $accepted_var = false; }else{ $accepted_var = true; }
     $id = strval(rand(11111,99999));
     $definedvoicename = $user['voicename'];
     $voicedburl = 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']);
     $voicemsgid = $vr['result']['message_id'];
     $thevoicemode = $user['voicemode'];
-    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '{$accepted_var}', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
+    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '0', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
     if($user['voicemode'] == 'public'){
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
@@ -317,6 +321,109 @@ elseif($callback_query){
             'show_alert' => true
         ]);
     }
+
+
+    if(strpos($data, 'changemode_') !== false){
+        $explode = explode('_', str_replace('changemode_', '', $data));
+        $voice_unique_id = $explode[0];
+        $pagenum = $explode[1];
+        $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
+        $voicename = $voiceinfo['name'];
+        if($voiceinfo['mode'] == 'public'){
+            // Make private
+            $db->query("UPDATE `voices` SET `mode` = 'private' WHERE `unique_id` = '$voice_unique_id';");
+            Bot('EditMessageText',[
+                'chat_id'=>$chatid,
+                'message_id'=> $messageid,
+                'text'=>"ویس « $voicename » به حالت خصوصی تغییر پیدا کرد. درصورتی که میخواهید مجدد این ویس را به حالت عمومی تغییر دهید، بدون نیاز به تایید مجدد میتوانید این کار را انجام دهید.",
+                'reply_markup'=>json_encode([
+                    'inline_keyboard'=>[
+                        [['text'=>"🔙 بازگشت", 'callback_data'=>'voicesettings_'.$page_num.'_'.$pagenum]],
+                    ],
+                ])
+            ]);
+        }else{
+            if($voiceinfo['accepted'] == 1){
+                $db->query("UPDATE `voices` SET `mode` = 'public' WHERE `unique_id` = '$voice_unique_id';");
+                Bot('EditMessageText',[
+                    'chat_id'=>$chatid,
+                    'message_id'=> $messageid,
+                    'text'=>"ویس « $voicename » به حالت عمومی تغییر پیدا کرد. (توجه: این ویس یکبار توسط مدیریت تایید شده و اکنون دیگر نیازی به تایید مجدد نیست)",
+                    'reply_markup'=>json_encode([
+                        'inline_keyboard'=>[
+                            [['text'=>"🔙 بازگشت", 'callback_data'=>'voicesettings_'.$page_num.'_'.$pagenum]],
+                        ],
+                    ])
+                ]);
+            }else{
+                $first_name = $message->from->first_name;
+                $last_name = $message->from->last_name;
+                $username = $update->callback_query->from->username;
+                $senderusername = '';
+                if(isset($cusername)){
+                    $senderusername = '🆔 آیدی ارسال کننده : @'.$cusername;
+                }
+                SendVoice($CONFIG['CHANNEL']['VOICEACCEPT'],
+                'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($voiceinfo['messageid']), 
+                json_encode([
+                    'inline_keyboard'=>[
+                    [['text'=>"✅",'callback_data'=>'accept-'.$voice_unique_id], ['text'=>"❌",'callback_data'=>'reject-'.$voice_unique_id]],
+                    ],
+                ]),
+                "🎤 $voicename
+            
+👤 ارسال کننده : $firstname
+💬 آیدی عددی ارسال کننده : $fromid
+$senderusername"
+                );
+                $usersendvoice = '1';
+                $db->query("UPDATE `voices` SET `accepted` = '0', `mode` = 'public' WHERE `unique_id` = '$voice_unique_id';");
+                $db->query("UPDATE `user` SET `step` = 'none', `voicename` = NULL, `voicemode` = 'waittomakepub', `sendvoice` = '1' WHERE `user`.`id` = '{$chatid}' LIMIT 1");
+                Bot('EditMessageText',[
+                    'chat_id'=>$chatid,
+                    'message_id'=> $messageid,
+                    'text'=>"🕔 این ویس تا به حال توسط مدیریت تایید نشده است! ویس شما برای مدیریت ارسال شد، لطفا کمی صبر کنید تا ویس شما تایید شود.",
+                    'reply_markup'=>json_encode([
+                        'inline_keyboard'=>[
+                            [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$pagenum]],
+                        ],
+                    ])
+                ]);
+            }
+        }
+    }
+
+    if((strpos($data, 'voicesettings_') !== false)){
+        
+        $explode = explode('_', str_replace('voicesettings_', '', $data));
+        $voice_unique_id = $explode[0];
+        $page_num = $explode[1];
+        $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
+        $voicename = $voiceinfo['name'];
+        
+        if($voiceinfo['mode'] == 'public'){
+            $changemode_text = "🔐 شخصی کردن ویس";
+        }else{
+            $changemode_text = "🔓 عمومی کردن ویس";
+        }
+
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=> $messageid,
+            'text'=>"به صفحه تنظیمات ویس « $voicename » خوش آمدید. لطفا از دکمه های زیر، یک مورد را انتخاب کنید 👇🏻",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>[
+                    [['text'=>"💬 اطلاعات ویس", 'callback_data'=>'aboutvoice_'.$voice_unique_id]],
+                    [['text'=>"🗑 حذف ویس", 'callback_data'=>'removebyuser_'.$voice_unique_id]],
+                    [['text'=>$changemode_text, 'callback_data'=>'changemode_'.$voice_unique_id.'_'.$page_num]],
+                    [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$page_num]],
+                ],
+            ])
+        ]);
+    }
+
+    
+
     if(strpos($data, 'setsortby_') !== false){
         $mode = str_replace('setsortby_', '', $data);
         $userinline = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$chatid}' LIMIT 1"));
@@ -363,6 +470,7 @@ elseif($callback_query){
     }
     if(strpos($data, 'myvoicespage_') !== false){
         $pagenum = intval(str_replace('myvoicespage_', '', $data));
+        $page_num = strval($pagenum);
         $page_limit = 10;
         $query = mysqli_query($db, "SELECT * FROM `voices` WHERE `sender` = '{$fromid}'");
         $num = mysqli_num_rows($query);
@@ -400,7 +508,7 @@ elseif($callback_query){
             if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
             $MyVoicesKey[] = [
                 ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
-                ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$user_voice_info['unique_id']],
+                ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings_'.$user_voice_info['unique_id'].'_'.$pagenum],
             ];
         }
         
@@ -436,6 +544,21 @@ elseif($callback_query){
             ])
         ]);
     }
+    if(strpos($data, 'aboutvoice_') !== false){
+        $voice_unique_id = str_replace('aboutvoice_', '', $data);
+        $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
+        $voicename = $voiceinfo['name'];
+        $voiceusecount = $voiceinfo['usecount'];
+        bot('answercallbackquery', [
+            'callback_query_id' => $update->callback_query->id,
+            'text' => "🔸 نام ویس : $voicename
+🔹 تعداد استفاده ویس : $voiceusecount بار",
+            'show_alert' => true
+        ]);
+    }
+
+
+    
     if(strpos($data, 'yesdeletebyuser_') !== false){
         $voice_unique_id = str_replace('yesdeletebyuser_', '', $data);
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
@@ -462,7 +585,13 @@ elseif($callback_query){
         ]);
         $voicesender = intval($getvoice['sender']);
         $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
-        SendMessage($voicesender, 'ویس شما توسط مدیریت تایید شد. ✅');
+        $senderinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$voicesender}' LIMIT 1"));
+        
+        if($senderinfo['voicemode'] == 'waittomakepub'){
+            SendMessage($voicesender, '✅ درخواست عمومی کردن ویس شما توسط مدیریت تایید شد.');
+        }else{
+            SendMessage($voicesender, 'ویس شما توسط مدیریت تایید شد. ✅');
+        }
     }elseif(strpos($data, 'reject-') !== false){
         $voiceid = str_replace('reject-', '', $data);
         bot('answercallbackquery', [
@@ -475,10 +604,20 @@ elseif($callback_query){
             'message_id' => $messageid,
         ]);
         $getvoice = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
-        SendMessage($getvoice['sender'], 'ویس شما توسط مدیریت رد شد. ❌');
+        
         $voicesender = intval($getvoice['sender']);
-        $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
+        
+        $senderinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$voicesender}' LIMIT 1"));
+        
+        if($senderinfo['voicemode'] == 'waittomakepub'){
+            $db->query("UPDATE `voices` SET `accepted` = '0', `mode` = 'private' WHERE `unique_id` = '$voiceid';");
+            SendMessage($getvoice['sender'], 'درخواست عمومی کردن ویس شما توسط مدیریت رد شد. ویس برروی حالت خصوصی مجددا در دسترس شما قرار گرفت. ❌');
+            $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
+            exit();
+        }
         $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voiceid}' LIMIT 1");
+        $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
+        SendMessage($getvoice['sender'], 'ویس شما توسط مدیریت رد شد. ❌');
         
     }
 }
@@ -729,7 +868,7 @@ elseif($text == '🗂 ویس های من' or $text == '/myvoices'){
         if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
         $MyVoicesKey[] = [
             ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
-            ['text'=>'❌ حذف ویس', 'callback_data'=>'removebyuser_'.$user_voice_info['unique_id']],
+            ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings_'.$user_voice_info['unique_id'].'_1'],
         ];
     }
     Bot('sendMessage',[
@@ -815,6 +954,8 @@ elseif($user['step'] == 'forward2all' && ($text !== $backbtn or strtolower($text
 
 
 elseif(!is_null($inline_text)){
+    $start_time = microtime(true);
+
     $inline_text = trim($inline_text);
     $results = [];
     $inlineuserid = $update->inline_query->from->id;
@@ -851,18 +992,28 @@ elseif(!is_null($inline_text)){
             'title' => $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'],
         ];
     }
+    $result_count = count($results);
     $results = array_splice($results, 0, 20, true);
     $dataval = [
         'inline_query_id' => $membercalls,
         'results' => json_encode($results)
     ];
     if($results == []){
-        $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا شد';
+        $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
         $dataval['switch_pm_parameter'] = 'noresult';
     }
-    if(strlen($inline_text) < 1){
+    elseif(strlen($inline_text) < 1){
         $dataval['switch_pm_text'] = 'ارسال ویس جدید';
         $dataval['switch_pm_parameter'] = 'sendvoice';
+    }
+    elseif(!in_array('switch_pm_text', $dataval)){
+        $time_end = microtime(true);
+        $wait = round($time_end - $start_time, 4);
+        if($result_count > 10){
+            $dataval['switch_pm_text'] = "نتیجه جستوجو $result_count ویس در $wait ثانیه";
+            $dataval['switch_pm_parameter'] = 'start';
+        }
+        
     }
     
     Bot('answerInlineQuery', $dataval);
