@@ -1,6 +1,6 @@
 # [Oh Pesar !](https://t.me/OhPesarBot)
 
-A fun open-source MIT-Licensed bot coded by Jeengli Team for telegram to send voice memes to your friends
+A fun open-source MIT-Licensed bot coded by Dishib Team for telegram to send voice memes to your friends
 
 # Setup
 * Upload src folder to your ssl-licensed web host
