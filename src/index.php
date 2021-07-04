@@ -393,14 +393,14 @@ $senderusername"
         }
     }
 
-    if((strpos($data, 'voicesettings_') !== false)){
+    if((strpos($data, 'voicesettings__') !== false)){
         
-        $explode = explode('_', str_replace('voicesettings_', '', $data));
+        $explode = explode('__', str_replace('voicesettings__', '', $data));
         $voice_unique_id = $explode[0];
         $page_num = $explode[1];
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
         $voicename = $voiceinfo['name'];
-        
+
         if($voiceinfo['mode'] == 'public'){
             $changemode_text = "🔐 شخصی کردن ویس";
         }else{
@@ -518,7 +518,7 @@ $senderusername"
             if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
             $MyVoicesKey[] = [
                 ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
-                ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings_'.$user_voice_info['unique_id'].'_'.$pagenum],
+                ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings__'.$user_voice_info['unique_id'].'__'.$pagenum],
             ];
         }
         
@@ -602,6 +602,7 @@ $senderusername"
         }else{
             SendMessage($voicesender, 'ویس شما توسط مدیریت تایید شد. ✅');
         }
+        $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
     }elseif(strpos($data, 'reject-') !== false){
         $voiceid = str_replace('reject-', '', $data);
         bot('answercallbackquery', [
@@ -621,8 +622,8 @@ $senderusername"
         
         if($senderinfo['voicemode'] == 'waittomakepub'){
             $db->query("UPDATE `voices` SET `accepted` = '0', `mode` = 'private' WHERE `unique_id` = '$voiceid';");
-            SendMessage($getvoice['sender'], 'درخواست عمومی کردن ویس شما توسط مدیریت رد شد. ویس برروی حالت خصوصی مجددا در دسترس شما قرار گرفت. ❌');
             $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
+            SendMessage($getvoice['sender'], 'درخواست عمومی کردن ویس شما توسط مدیریت رد شد. ویس برروی حالت خصوصی مجددا در دسترس شما قرار گرفت. ❌');
             exit();
         }
         $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voiceid}' LIMIT 1");
@@ -878,7 +879,7 @@ elseif($text == '🗂 ویس های من' or $text == '/myvoices'){
         if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
         $MyVoicesKey[] = [
             ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
-            ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings_'.$user_voice_info['unique_id'].'_1'],
+            ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings__'.$user_voice_info['unique_id'].'__1'],
         ];
     }
     Bot('sendMessage',[
@@ -1039,7 +1040,7 @@ elseif($update->message->voice){
         exit();
     }
     if(!$voiceinfo['accepted']) $found = false;
-    if($message->via_bot->username !== 'OhPesarBot') $found = false;
+    // if($message->via_bot->username !== 'OhPesarBot') $found = false;
     if(!$found && $user['step'] == 'none'){
         SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
         exit();
@@ -1048,7 +1049,7 @@ elseif($update->message->voice){
         [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$voiceinfo['name']]]
     ];
     if(intval($voiceinfo['sender']) == intval($chat_id)){
-        $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings_'.$vid.'_00']];
+        $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings__'.$vid.'__00']];
     }
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
