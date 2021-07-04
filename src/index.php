@@ -13,6 +13,10 @@ foreach ($allowed_ipranges as $iprange) if (!$ok) {
 }
 if (!$ok) die();
 
+if(!is_file('badwords.json')){
+    file_put_contents('badwords.json', file_get_contents('https://raw.githubusercontent.com/amirshnll/Persian-Swear-Words/master/data.json'));
+}
+
 ob_start();
 error_reporting(0);
 date_default_timezone_set('Asia/Tehran');
@@ -93,6 +97,8 @@ if(isset($update->inline_query)){
 
 if(isset($from_id))
     $user = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$from_id}' LIMIT 1"));
+elseif(isset($fromid))
+    $user = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$fromid}' LIMIT 1"));
     
 if (!$user) {
     $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$from_id}', 'none')");
@@ -121,24 +127,13 @@ if(strtolower($text) == '/start' or $text == $backbtn or $text == '/start startf
 }
 
 elseif($text == '⚙️ تنظیمات'){
-    $sortby = [
-        'oldest'=>'',
-        'newest'=>'',
-        'popularest'=>'',
-        'private'=>''
-    ];
-    if($user['sortby'] == 'newest'){ $sortby['newest'] = '✅'; }
-    elseif($user['sortby'] == 'popularest'){ $sortby['popularest'] = '✅'; }
-    elseif($user['sortby'] == 'private'){ $sortby['private'] = '✅'; }
-    else{ $sortby['oldest'] = '✅'; }
-
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
-        'text'=>"⚙️ به تنظیمات ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻",
+        'text'=>"⚙️ به تنظیمات اکانت خود در ربات اوه پسر خوش آمدید، لطفا یک بخش را از بین بخش های زیر انتخاب کنید 👇🏻",
         'reply_markup'=>json_encode([
             'inline_keyboard'=>[
-                [['text'=>$sortby['newest'].' جدیدترین ویس ها', 'callback_data'=>'setsortby_newest'], ['text'=>$sortby['oldest'].' قدیمیترین ویس ها', 'callback_data'=>'setsortby_oldest']],
-                [['text'=>$sortby['popularest'].' محبوبترین ویس ها', 'callback_data'=>'setsortby_popularest']],
+                [['text'=>'⚙️ مرتب سازی نمایش ویس ها', 'callback_data'=>'usersettings']],
+                [['text'=>'⚙️ نمایش ویس های نامناسب', 'callback_data'=>'showbadvoices']],
             ],
         ])
     ]);
@@ -150,15 +145,23 @@ elseif($text == '🆕 جدیدترین ویس ها'){
     
     $list = $voices = [];
     
-    for ($i=0; $i < $num; $i++) { $voices[] = mysqli_fetch_assoc($query); }
+    for ($i=0; $i < $num; $i++) {
+        
+        $voices[] = mysqli_fetch_assoc($query);
+    }
     $voices = array_reverse($voices);
-    $voices = array_splice($voices, 0, 10, true);
+    
     
     foreach($voices as $voiceinfo){
         if($voiceinfo['mode'] == 'private' && $voiceinfo['sender'] != $inlineuserid){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
+        if($user['badvoices'] == 0){
+            if( IsBadWord($voiceinfo['name']) ) continue;
+        }
         $list[] = [['text'=>"🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$voiceinfo['name']]];
     }
+
+    $list = array_splice($list, 0, 10, true);
 
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
@@ -181,6 +184,9 @@ elseif($text == '❣️ محبوبترین ویس ها'){
         $voiceinfo = mysqli_fetch_assoc($query);
         if($voiceinfo['mode'] == 'private' && $voiceinfo['sender'] != $inlineuserid){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
+        if($user['badvoices'] == 0){
+            if( IsBadWord($voiceinfo['name']) ) continue;
+        }
         $msgbtn[] = [['text'=>"❣️🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$voiceinfo['name']]];
     }
     $msgbtn = array_splice($msgbtn, 0, 10, true);
@@ -319,6 +325,86 @@ elseif($callback_query){
             'callback_query_id' => $update->callback_query->id,
             'text' => "🕐 این ویس درحالت بررسی قرار دارد و هنوز توسط تایید نشده است. ویس شما تا زمانی که تایید نشود قابل استفاده نمیباشد.",
             'show_alert' => true
+        ]);
+    }
+
+    if($data == 'showbadvoices'){
+        if($user['badvoices'] == 1){
+            $modetype = 'روشن';
+            $btnchange = '✅ '.$modetype;
+        }else{
+            $modetype = 'خاموش';
+            $btnchange = '❌ '.$modetype;
+        }
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=> $messageid,
+            'text'=>"⚙️ به تنظیمات نمایش ویس های نامناسب خوش آمدید.
+
+❔ ویس های نامناسب چیست؟ برخی از ویس های ثبت شده توسط کاربران دارای محتوا و نام های نامناسب، زشت و یا حتی +18 هستند که برخی از کاربران قادر به نمایش این نوع ویس ها نیستند. درصورتی که میخواهید این ویس ها برای شما به طور کلی در ربات نمایش داده نشوند، میتوانید این حالت را خاموش کنید.
+
+این حالت درحال حاضر برای شما $modetype است.",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>[
+                    [['text'=>$btnchange, 'callback_data'=>'changemode_badvoice']],
+                ],
+            ])
+        ]);
+        exit();
+    }
+
+    if($data == 'changemode_badvoice'){
+        
+        if($user['badvoices'] == 0){
+            $mode = 1;
+            $modetype = 'روشن';
+            $btnchange = '✅ '.$modetype;
+        }else{
+            $mode = 0;
+            $modetype = 'خاموش';
+            $btnchange = '❌ '.$modetype;
+        }
+        $db->query("UPDATE `user` SET `badvoices` = '{$mode}' WHERE `user`.`id` = $chatid;");
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=> $messageid,
+            'text'=>"⚙️ به تنظیمات نمایش ویس های نامناسب خوش آمدید.
+
+❔ ویس های نامناسب چیست؟ برخی از ویس های ثبت شده توسط کاربران دارای محتوا و نام های نامناسب، زشت و یا حتی +18 هستند که برخی از کاربران قادر به نمایش این نوع ویس ها نیستند. درصورتی که میخواهید این ویس ها برای شما به طور کلی در ربات نمایش داده نشوند، میتوانید این حالت را خاموش کنید.
+
+این حالت درحال حاضر برای شما $modetype است.",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>[
+                    [['text'=>$btnchange, 'callback_data'=>'changemode_badvoice']],
+                ],
+            ])
+        ]);
+        exit();
+    }
+
+
+    if($data == 'usersettings'){
+        $sortby = [
+            'oldest'=>'',
+            'newest'=>'',
+            'popularest'=>'',
+            'private'=>''
+        ];
+        if($user['sortby'] == 'newest'){ $sortby['newest'] = '✅'; }
+        elseif($user['sortby'] == 'popularest'){ $sortby['popularest'] = '✅'; }
+        elseif($user['sortby'] == 'private'){ $sortby['private'] = '✅'; }
+        else{ $sortby['oldest'] = '✅'; }
+    
+        Bot('EditMessageText',[
+            'chat_id'=>$chatid,
+            'message_id'=> $messageid,
+            'text'=>"⚙️ به تنظیمات مرتب سازی ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻",
+            'reply_markup'=>json_encode([
+                'inline_keyboard'=>[
+                    [['text'=>$sortby['newest'].' جدیدترین ویس ها', 'callback_data'=>'setsortby_newest'], ['text'=>$sortby['oldest'].' قدیمیترین ویس ها', 'callback_data'=>'setsortby_oldest']],
+                    [['text'=>$sortby['popularest'].' محبوبترین ویس ها', 'callback_data'=>'setsortby_popularest']],
+                ],
+            ])
         ]);
     }
 
@@ -469,7 +555,7 @@ $senderusername"
         Bot('EditMessageText',[
             'chat_id'=>$chatid,
             'message_id'=>$messageid,
-            'text'=>"⚙️ به تنظیمات ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻",
+            'text'=>"⚙️ به تنظیمات مرتب سازی ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻",
             'reply_markup'=>json_encode([
                 'inline_keyboard'=>[
                     [['text'=>$sortby['newest'].' جدیدترین ویس ها', 'callback_data'=>'setsortby_newest'], ['text'=>$sortby['oldest'].' قدیمیترین ویس ها', 'callback_data'=>'setsortby_oldest']],
@@ -995,6 +1081,9 @@ elseif(!is_null($inline_text)){
         if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ continue; }
         if(!$voiceinfo['accepted']){ continue; }
         if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
+        if($userinline['badvoices'] == 0){
+            if( IsBadWord($voiceinfo['name']) ) continue;
+        }
         
         $results[] = [
             'type' => 'voice',
@@ -1051,9 +1140,13 @@ elseif($update->message->voice){
     if(intval($voiceinfo['sender']) == intval($chat_id)){
         $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings__'.$vid.'__00']];
     }
+    $addtexts = '';
+    if($user['badvoices'] == 0){
+        if( IsBadWord($voiceinfo['name']) ) $addtexts .= '⚠️ توجه : ربات این ویس را جز دسته ویس های نامناسب تشخیص داده و حالت نمایش ویس های نامناسب شما خاموش است، در نتیجه این ویس برای شما در سرچ نمایش داده نمیشود!';
+    }
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
-        'text'=>'🎤 نام ویس ارسالی : '.$voiceinfo['name'],
+        'text'=>'🎤 نام ویس ارسالی : '.$voiceinfo['name']."\n$addtexts",
         'reply_markup'=>json_encode([
         'inline_keyboard'=>$voiceload_btns,
         ])
