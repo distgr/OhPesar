@@ -52,3 +52,14 @@ function getChatMember($channel, $id = ""){
          return false;
      }
 }
+
+function IsBadWord($sometext){
+    global $CONFIG;
+    $badwords_database = json_decode(file_get_contents('badwords.json'), true);
+    $custom_words = $CONFIG['CUSTOM_BADWORDS'];
+    $badwords = array_merge($badwords_database['word'], $custom_words);
+    foreach ($badwords as $word) {
+        if(strpos(strtolower($sometext), strtolower($word)) !== false) return true;
+    }
+    return false;
+}
