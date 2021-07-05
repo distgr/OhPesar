@@ -9,7 +9,7 @@ if($update->message->voice){
         SendMessage($chat_id, '👀 اوه پسر متاسفم! این یه ویس شخصیه که توسط یکی از کاربرای ربات ثبت شده و تو نمیتونی ازش استفاده کنی');
         exit();
     }
-    if(!$voiceinfo['accepted']) $found = false;
+    if(!$voiceinfo['accepted'] && $voiceinfo['mode'] == 'public') $found = false;
     if(!$found && $user['step'] == 'none'){
         SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
         exit();
