@@ -14,5 +14,8 @@
         "USERNAME": "",  // Database username
         "PASSWORD": "", // Database password
     },
+    "CUSTOM_BADWORDS":[
+
+    ] // Your custom badwords to filter if user turned off show bad-voices
     "ADMINS": [000000000], // Bot Admins
 }
