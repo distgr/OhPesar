@@ -24,16 +24,13 @@ if(!is_null($inline_text)){
         $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` ASC";
     }
     $query = mysqli_query($db, $querystring);
-    $num = mysqli_num_rows($query);
-    for ($i=0; $i < $num; $i++) {
-    	$voiceinfo = mysqli_fetch_assoc($query);
-        if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ continue; }
-        if(!$voiceinfo['accepted']){ continue; }
-        if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
+    while ($voiceinfo = mysqli_fetch_assoc($query)) {
         if($userinline['badvoices'] == 0){
             if( IsBadWord($voiceinfo['name']) ) continue;
         }
-        
+        if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ continue; }
+        elseif(!$voiceinfo['accepted'] && strtolower($voiceinfo['mode']) == 'public'){ continue; }
+        if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
         $results[] = [
             'type' => 'voice',
             'id' => $voiceinfo['unique_id'],
