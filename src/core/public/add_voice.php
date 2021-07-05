@@ -26,6 +26,7 @@ elseif($user['step'] == 'sendvoice1' && $text !== $backbtn){
 🔐 اما درصورتی که میخواهید ویس خود را روی حالت خصوصی قرار دهید، ویس شما نیاز به مرحله تایید ندارد و ویس شما در ربات ثبت میشود، اما فقط خودتان قادر به مشاهده و استفاده آن ویس خواهید بود.',
         'reply_markup'=>json_encode(['keyboard'=>$privateorpublic, 'resize_keyboard'=>true])
     ]);
+    exit();
 }
 
 if($text && $user['step'] == 'sendvoice2' && $text !== $backbtn){
@@ -49,6 +50,7 @@ if($text && $user['step'] == 'sendvoice2' && $text !== $backbtn){
         'text'=>'حالا لطفا خود ویس را ارسال کنید.',
         'reply_markup'=>json_encode(['keyboard'=>$back, 'resize_keyboard'=>true])
     ]);
+    exit();
 }
 
 if($user['step'] == 'sendvoice3' && $text !== $backbtn){
@@ -112,4 +114,5 @@ $senderusername"
         $usersendvoice = '0';
     }
     $db->query("UPDATE `user` SET `step` = 'none', `voicename` = NULL, `voicemode` = NULL, `sendvoice` = '{$usersendvoice}' WHERE `user`.`id` = '{$from_id}' LIMIT 1");
+    exit();
 }
