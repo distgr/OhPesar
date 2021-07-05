@@ -33,7 +33,7 @@ if(!is_null($inline_text)){
         if(!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1){ continue; }
         $results[] = [
             'type' => 'voice',
-            'id' => $voiceinfo['unique_id'],
+            'id' => $voiceinfo['unique_id'].'__'.base64_encode(rand()),
             'voice_url' =>  $voiceinfo['url'],
             'title' => $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'],
         ];

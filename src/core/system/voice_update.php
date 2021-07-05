@@ -34,6 +34,6 @@ if($update->message->voice){
 }
 
 elseif($update->chosen_inline_result){
-    $voiceid = $update->chosen_inline_result->result_id;
+    $voiceid = explode('__', $update->chosen_inline_result->result_id)[0];
     $db->query("UPDATE `voices` SET `usecount` = `usecount` + 1 WHERE `unique_id` = '{$voiceid}' LIMIT 1");
 }
