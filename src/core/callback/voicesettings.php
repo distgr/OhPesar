@@ -13,9 +13,9 @@ if($callback_query){
         if($voiceinfo['mode'] == 'public'){ $changemode_text = "🔐 شخصی کردن ویس"; }else{ $changemode_text = "🔓 عمومی کردن ویس"; }
 
         $voicesettings_btn = [
-            [['text'=>"💬 اطلاعات ویس", 'callback_data'=>'aboutvoice_'.$voice_unique_id]],
-            [['text'=>"🗑 حذف ویس", 'callback_data'=>'removebyuser_'.$voice_unique_id]],
-            [['text'=>$changemode_text, 'callback_data'=>'changemode_'.$voice_unique_id.'_'.$page_num]],
+            [['text'=>"💬 اطلاعات ویس", 'callback_data'=>'aboutvoice__'.$voice_unique_id]],
+            [['text'=>"🗑 حذف ویس", 'callback_data'=>'removebyuser__'.$voice_unique_id]],
+            [['text'=>$changemode_text, 'callback_data'=>'changemode__'.$voice_unique_id.'__'.$page_num]],
         ];
 
         if($page_num == '0'){
@@ -36,8 +36,8 @@ if($callback_query){
 
     // -------------
 
-    if(strpos($data, 'aboutvoice_') !== false){
-        $voice_unique_id = str_replace('aboutvoice_', '', $data);
+    if(strpos($data, 'aboutvoice__') !== false){
+        $voice_unique_id = str_replace('aboutvoice__', '', $data);
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
         $voicename = $voiceinfo['name'];
         $voiceusecount = $voiceinfo['usecount'];
@@ -51,8 +51,8 @@ if($callback_query){
 
     // -------------
 
-    if(strpos($data, 'changemode_') !== false){
-        $explode = explode('_', str_replace('changemode_', '', $data));
+    if(strpos($data, 'changemode__') !== false){
+        $explode = explode('__', str_replace('changemode__', '', $data));
         $voice_unique_id = $explode[0];
         $pagenum = $explode[1];
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
@@ -123,8 +123,8 @@ if($callback_query){
 
     // ----
 
-    if(strpos($data, 'removebyuser_') !== false){
-        $voice_unique_id = str_replace('removebyuser_', '', $data);
+    if(strpos($data, 'removebyuser__') !== false){
+        $voice_unique_id = str_replace('removebyuser__', '', $data);
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
         $voicename = $voiceinfo['name'];
         Bot('EditMessageText',[
@@ -133,7 +133,7 @@ if($callback_query){
             'text'=>"❕ آیا مطمئن هستید که میخواهید ویس « $voicename » را حذف کنید ؟",
             'reply_markup'=>json_encode([
                 'inline_keyboard'=>[
-                    [['text'=>"✅ بله حذف کن", 'callback_data'=>'yesdeletebyuser_'.$voice_unique_id], ['text'=>"❌ نه حذف نکن", 'callback_data'=>'nodeletebyuser']]
+                    [['text'=>"✅ بله حذف کن", 'callback_data'=>'yesdeletebyuser__'.$voice_unique_id], ['text'=>"❌ نه حذف نکن", 'callback_data'=>'nodeletebyuser']]
                 ],
             ])
         ]);
@@ -141,8 +141,8 @@ if($callback_query){
 
     // --------
 
-    if(strpos($data, 'yesdeletebyuser_') !== false){
-        $voice_unique_id = str_replace('yesdeletebyuser_', '', $data);
+    if(strpos($data, 'yesdeletebyuser__') !== false){
+        $voice_unique_id = str_replace('yesdeletebyuser__', '', $data);
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
         $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voice_unique_id}' LIMIT 1");
         EditMessage($chatid, $messageid, '✅ ویس مورد نظر حذف شد.');
