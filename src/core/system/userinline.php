@@ -66,10 +66,11 @@ if(!is_null($inline_text)){
         }
     }
     $result_count = count($results);
-    $results = array_splice($results, 0, rand(20,40), true);
+    $results = array_splice($results, 0, 20, true);
     $dataval = [
         'inline_query_id' => $membercalls,
-        'results' => json_encode($results)
+        'results' => json_encode($results),
+        'is_personal'=> true
     ];
     if($results == []){
         $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
