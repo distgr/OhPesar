@@ -25,7 +25,8 @@ if($callback_query){
 
         $MyVoicesKey = [];
 
-        if($lastpage){
+        if($pagenum == 0 or ($page_num == 1 && $num <= 10)){
+        }elseif($lastpage){
             $MyVoicesKey[] = [['text'=>'صفحه قبلی ◀️', 'callback_data'=>'myvoicespage_'.strval($pagenum-1)]];
         }elseif($pagenum == 1){
             $MyVoicesKey[] = [['text'=>'▶️ صفحه بعدی', 'callback_data'=>'myvoicespage_'.strval($pagenum+1)]];
