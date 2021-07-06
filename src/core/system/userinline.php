@@ -15,13 +15,23 @@ function startsWith ($string, $startString)
     return (substr($string, 0, $len) === $startString);
 }
 
+function arraypos($text, $array){
+    foreach ($array as $i) {
+        if(strpos($text, $i) !== false){
+            return true;
+        }
+    }
+    return false;
+}
+
 function SearchFilter($voiceinfo, $userinline, $inlineuserid, $inline_text){
+    $kwargs = ['-id'];
     if($userinline['badvoices'] == 0){
         if( IsBadWord($voiceinfo['name']) ) return false;
     }
     if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ return false; }
     elseif(!$voiceinfo['accepted'] && strtolower($voiceinfo['mode']) == 'public'){ return false; }
-    if((!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1) && !(strpos($inline_text, '-id ') !== false)){ return false; }
+    if((!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1) && !arraypos($inline_text, $kwargs)){ return false; }
     return true;
 }
 
@@ -45,6 +55,21 @@ if(!is_null($inline_text)){
     if(strpos($inline_text, '-id ') !== false){
         $inline_vid = str_replace('-id ', '', $inline_text);
         $querystring = "SELECT * FROM `voices` WHERE `id` = '{$inline_vid}' LIMIT 1";
+    }
+
+    elseif(strpos($inline_text, '-private') !== false){
+        $inline_text = trim(str_replace('-private', '', $inline_text));
+        $querystring = "SELECT * FROM `voices` WHERE `mode` = 'private'";
+    }
+
+    elseif(strpos($inline_text, '-public') !== false){
+        $inline_text = trim(str_replace('-public', '', $inline_text));
+        $querystring = "SELECT * FROM `voices` WHERE `mode` = 'public'";
+    }
+
+    elseif(strpos($inline_text, '-me') !== false){
+        $inline_text = trim(str_replace('-me', '', $inline_text));
+        $querystring = "SELECT * FROM `voices` WHERE `sender` = '{$inlineuserid}'";
     }
     
     elseif($userinline['sortby'] == 'newest'){
