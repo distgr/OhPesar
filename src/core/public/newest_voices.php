@@ -19,7 +19,8 @@ if($text == '🆕 جدیدترین ویس ها'){
         if($user['badvoices'] == 0){
             if( IsBadWord($voiceinfo['name']) ) continue;
         }
-        $list[] = [['text'=>"🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$voiceinfo['name']]];
+        $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
+        $list[] = [['text'=>"🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$switchquery]];
     }
 
     $list = array_splice($list, 0, 10, true);
