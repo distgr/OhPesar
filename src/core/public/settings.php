@@ -8,6 +8,7 @@ if($text == '⚙️ تنظیمات'){
             'inline_keyboard'=>[
                 [['text'=>'⚙️ مرتب سازی نمایش ویس ها', 'callback_data'=>'usersettings']],
                 [['text'=>'⚙️ نمایش ویس های نامناسب', 'callback_data'=>'showbadvoices']],
+                [['text'=>'⚙️ عملکرد دکمه ارسال ویس برای دیگران', 'callback_data'=>'sendvoiceaction']],
             ],
         ])
     ]);

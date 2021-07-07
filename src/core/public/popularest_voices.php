@@ -13,7 +13,8 @@ if($text == '❣️ محبوبترین ویس ها'){
         if($user['badvoices'] == 0){
             if( IsBadWord($voiceinfo['name']) ) continue;
         }
-        $msgbtn[] = [['text'=>"❣️🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$voiceinfo['name']]];
+        $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
+        $msgbtn[] = [['text'=>"❣️🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$switchquery]];
     }
     $msgbtn = array_splice($msgbtn, 0, 10, true);
     

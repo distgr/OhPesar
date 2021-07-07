@@ -14,13 +14,19 @@ if($update->message->voice){
         SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
         exit();
     }
+
+    $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
+
     $voiceload_btns = [
-        [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$voiceinfo['name']]]
+        [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$switchquery]]
     ];
     if(intval($voiceinfo['sender']) == intval($chat_id)){
         $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings__'.$vid.'__00']];
     }
     $addtexts = '';
+
+    $addtexts .= "🆔 آیدی ویس : ".$voiceinfo['id']."\n";
+
     if($user['badvoices'] == 0){
         if( IsBadWord($voiceinfo['name']) ) $addtexts .= '⚠️ توجه : ربات این ویس را جز دسته ویس های نامناسب تشخیص داده و حالت نمایش ویس های نامناسب شما خاموش است، در نتیجه این ویس برای شما در سرچ نمایش داده نمیشود!';
     }
