@@ -19,7 +19,8 @@ if($callback_query){
         ];
 
         if($page_num == '0'){
-            $voicesettings_btn[] = [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$voicename]];
+            $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
+            $voicesettings_btn[] = [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$switchquery]];
         }else{
             $voicesettings_btn[] = [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$page_num]];
         }
