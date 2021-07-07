@@ -30,8 +30,9 @@ if($text == '🗂 ویس های من' or $text == '/myvoices'){
             }
         }
         if($user_voice_info['mode'] == 'public'){ $voiceemoji = '🎤'; }else{ $voiceemoji = '🔐'; }
+        $switchquery = ['byname'=>$user_voice_info['name'], 'byid'=>'-id '.$user_voice_info['id']][$user['sendvoiceaction']];
         $MyVoicesKey[] = [
-            ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$user_voice_info['name']],
+            ['text'=>$voiceemoji.' '.$user_voice_info['name'], 'switch_inline_query'=>$switchquery],
             ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings__'.$user_voice_info['unique_id'].'__1'],
         ];
     }
