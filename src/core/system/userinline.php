@@ -95,7 +95,8 @@ if(!is_null($inline_text)){
     $dataval = [
         'inline_query_id' => $membercalls,
         'results' => json_encode($results),
-        'is_personal'=> true
+        'is_personal'=> true,
+        'cache_time'=> 1
     ];
     if($results == []){
         $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
