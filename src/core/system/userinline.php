@@ -1,11 +1,12 @@
 <?php
 
-function MakeVoiceResponde($voiceinfo){
+function MakeVoiceResponde($voiceinfo, $show_id){
+    $voicename = $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'];
     return [
         'type' => 'voice',
         'id' => $voiceinfo['unique_id'].'__'.base64_encode(rand()),
         'voice_url' =>  $voiceinfo['url'],
-        'title' => $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'],
+        'title' => $show_id ? '('.$voiceinfo['id'].') '.$voicename : $voicename,
     ];
 }
 
@@ -36,6 +37,7 @@ function SearchFilter($voiceinfo, $userinline, $inlineuserid, $inline_text){
 }
 
 if(!is_null($inline_text)){
+    $show_id = false;
     $start_time = microtime(true);
     $inline_text = trim($inline_text);
     $results = [];
@@ -71,7 +73,7 @@ if(!is_null($inline_text)){
         $inline_text = trim(str_replace('-me', '', $inline_text));
         $querystring = "SELECT * FROM `voices` WHERE `sender` = '{$inlineuserid}'";
     }
-    
+
     elseif($userinline['sortby'] == 'newest'){
         $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` DESC";
     }elseif($userinline['sortby'] == 'popularest'){
@@ -79,15 +81,19 @@ if(!is_null($inline_text)){
     }else{
         $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` ASC";
     }
+    if(strpos($inline_text, '-showid') !== false){
+        $inline_text = trim(str_replace('-showid', '', $inline_text));
+        $show_id = true;
+    }
     $query = mysqli_query($db, $querystring);
     if(mysqli_num_rows($query) == 1){
         $voiceinfo = mysqli_fetch_assoc($query);
         if(SearchFilter($voiceinfo, $userinline, $inlineuserid, $inline_text))
-            $results[] = MakeVoiceResponde($voiceinfo);
+            $results[] = MakeVoiceResponde($voiceinfo, $show_id);
     }else{
         while ($voiceinfo = mysqli_fetch_assoc($query)) {
             if(SearchFilter($voiceinfo, $userinline, $inlineuserid, $inline_text))
-                $results[] = MakeVoiceResponde($voiceinfo);
+                $results[] = MakeVoiceResponde($voiceinfo, $show_id);
         }
     }
     $result_count = count($results);
