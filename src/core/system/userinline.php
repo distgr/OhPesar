@@ -53,6 +53,10 @@ if(!is_null($inline_text)){
         exit();
     }
     
+    if(strpos($inline_text, '-showid') !== false){
+        $inline_text = trim(str_replace('-showid', '', $inline_text));
+        $show_id = true;
+    }
     
     if(strpos($inline_text, '-id ') !== false){
         $inline_vid = str_replace('-id ', '', $inline_text);
@@ -80,10 +84,6 @@ if(!is_null($inline_text)){
         $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`usecount` DESC";
     }else{
         $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` ASC";
-    }
-    if(strpos($inline_text, '-showid') !== false){
-        $inline_text = trim(str_replace('-showid', '', $inline_text));
-        $show_id = true;
     }
     $query = mysqli_query($db, $querystring);
     if(mysqli_num_rows($query) == 1){
