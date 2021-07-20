@@ -7,7 +7,8 @@ CREATE TABLE `user` (
     `voiceedit` char(50) DEFAULT NULL,
     `sortby` char(100) NOT NULL DEFAULT 'newest',
     `badvoices` char(200) DEFAULT '0',
-    `sendvoiceaction` char(50) DEFAULT 'byname'
+    `sendvoiceaction` char(50) DEFAULT 'byname',
+    `latestvoiceid` char(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 ALTER TABLE `user`
