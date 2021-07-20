@@ -38,6 +38,7 @@ function SearchFilter($voiceinfo, $userinline, $inlineuserid, $inline_text){
 
 if(!is_null($inline_text)){
     $show_id = false;
+    $order = true;
     $start_time = microtime(true);
     $inline_text = trim($inline_text);
     $results = [];
@@ -52,6 +53,8 @@ if(!is_null($inline_text)){
         ]);
         exit();
     }
+
+    $querystring = "SELECT * FROM `voices`";
     
     if(strpos($inline_text, '-showid') !== false){
         $inline_text = trim(str_replace('-showid', '', $inline_text));
@@ -61,6 +64,7 @@ if(!is_null($inline_text)){
     if(strpos($inline_text, '-id ') !== false){
         $inline_vid = str_replace('-id ', '', $inline_text);
         $querystring = "SELECT * FROM `voices` WHERE `id` = '{$inline_vid}' LIMIT 1";
+        $order = false;
     }
 
     elseif(strpos($inline_text, '-private') !== false){
@@ -78,13 +82,23 @@ if(!is_null($inline_text)){
         $querystring = "SELECT * FROM `voices` WHERE `sender` = '{$inlineuserid}'";
     }
 
-    elseif($userinline['sortby'] == 'newest'){
-        $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` DESC";
-    }elseif($userinline['sortby'] == 'popularest'){
-        $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`usecount` DESC";
-    }else{
-        $querystring = "SELECT * FROM `voices` ORDER BY `voices`.`id` ASC";
+    elseif(strpos($inline_text, '-latest') !== false){
+        $inline_text = trim(str_replace(('-latest'), '', $inline_text));
+        $latestid = $userinline['latestvoice'];
+        $querystring = "SELECT * FROM `voices` WHERE `unique_id` = '{$latestid}' LIMIT 1";
+        $order = false;
     }
+
+    if($order){
+        if($userinline['sortby'] == 'newest'){
+            $querystring .= " ORDER BY `voices`.`id` DESC";
+        }elseif($userinline['sortby'] == 'popularest'){
+            $querystring .= " ORDER BY `voices`.`usecount` DESC";
+        }else{
+            $querystring .= " ORDER BY `voices`.`id` ASC";
+        }
+    }
+    
     $query = mysqli_query($db, $querystring);
     if(mysqli_num_rows($query) == 1){
         $voiceinfo = mysqli_fetch_assoc($query);
@@ -108,7 +122,7 @@ if(!is_null($inline_text)){
         $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
         $dataval['switch_pm_parameter'] = 'noresult';
     }
-    elseif(strlen($inline_text) < 1){
+    elseif(strlen($inline_text) < 1 && $order){
         $dataval['switch_pm_text'] = 'ارسال ویس جدید';
         $dataval['switch_pm_parameter'] = 'sendvoice';
     }
