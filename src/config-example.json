@@ -6,8 +6,7 @@
         "DATABASEID": "", // Channel numeric id
         "LOGID": "",  // Channel numeric id,
         "VOICEACCEPT": "", // Voice accept channel numeric id
-        "CONTACTID": "", // Contact us channel numeric id
-        "SERVERURL": "https://yourserver.com/.../OhPesar/" // Source folder url in server
+        "CONTACTID": "" // Contact us channel numeric id
     },
     "DATABASE":{
         "DBNAME": "", // Database name
@@ -18,4 +17,5 @@
 
     ] // Your custom badwords to filter if user turned off show bad-voices
     "ADMINS": [000000000], // Bot Admins
+    "SERVERURL": "https://yourserver.com/.../OhPesar/" // Source folder url in server
 }
