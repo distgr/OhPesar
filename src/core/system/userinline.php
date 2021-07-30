@@ -49,7 +49,9 @@ if(!is_null($inline_text)){
             'inline_query_id' => $membercalls,
             'results' => json_encode($results),
             'switch_pm_text'=> 'برای استفاده از ربات باید ربات را استارت بزنید',
-            'switch_pm_parameter'=> 'startforuse'
+            'switch_pm_parameter'=> 'startforuse',
+            'is_personal'=> true,
+            'cache_time'=> 1
         ]);
         exit();
     }
