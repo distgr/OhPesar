@@ -134,8 +134,10 @@ if(!is_null($inline_text)){
         'results' => json_encode($results),
         'is_personal'=> true,
         'cache_time'=> 1,
-        'next_offset'=> "$from_offest:$next_offset"
     ];
+    if(count($results) >= 10)
+        $dataval['next_offset'] = "$from_offest:$next_offset";
+    
     if($results == []){
         $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
         $dataval['switch_pm_parameter'] = 'noresult';
@@ -152,6 +154,10 @@ if(!is_null($inline_text)){
             $dataval['switch_pm_parameter'] = 'start';
         }
         
+    }
+    if($addtofav && $results !== []){
+        $dataval['switch_pm_text'] = "ویس انتخابی به علاقه مندی های شما اضافه خواهد شد";
+        $dataval['switch_pm_parameter'] = 'start';
     }
     Bot('answerInlineQuery', $dataval);
 }
