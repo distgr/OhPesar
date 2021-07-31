@@ -42,6 +42,22 @@ if($update->message->voice){
 elseif($update->chosen_inline_result){
     $voiceid = explode('__', $update->chosen_inline_result->result_id)[0];
     $user = $update->chosen_inline_result->from->id;
+    $query = $update->chosen_inline_result->query;
     $db->query("UPDATE `voices` SET `usecount` = `usecount` + 1 WHERE `unique_id` = '{$voiceid}' LIMIT 1");
     $db->query("UPDATE `user` SET `latestvoice` = '{$voiceid}' WHERE `user`.`id` = '{$user}' LIMIT 1");
+    if((strpos($query, '+favorite') !== false) or (strpos($query, '+fav') !== false)){
+        $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}' LIMIT 1"));
+        $voicename = $voiceinfo['name'];
+
+        $voiceinfav = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `favorites` WHERE `voiceid` = '{$voiceid}' and `userid` = '{$user}' LIMIT 1"));
+
+        if (!$voiceinfav) {
+            $db->query("INSERT INTO `favorites` (`voiceid`, `userid`) VALUES ('{$voiceid}', '{$user}')");
+            SendMessage($user, "⭐️ ویس « $voicename » به علاقه مندی های شما اضافه شد.");
+        }else{
+            SendMessage($user, "⭐️ ویس « $voicename » در علاقه مندی های شما بود.");
+        }
+
+        
+    }
 }
