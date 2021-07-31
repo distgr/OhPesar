@@ -113,12 +113,28 @@ if(!is_null($inline_text)){
         }
     }
     $result_count = count($results);
-    $results = array_splice($results, 0, 20, true);
+    
+    $show_limit = 20;
+    
+    $offset = $update->inline_query->offset;
+    
+    if($offset == ""){
+        $from_offest = 0;
+        $next_offset = $show_limit;
+    }else{
+        $offset_explode = explode(':', $offset);
+        $from_offest = intval($offset_explode[1]);
+        $next_offset = $from_offest+$show_limit;
+    }
+    
+    $results = array_splice($results, $from_offest, $show_limit, true);
+
     $dataval = [
         'inline_query_id' => $membercalls,
         'results' => json_encode($results),
         'is_personal'=> true,
-        'cache_time'=> 1
+        'cache_time'=> 1,
+        'next_offset'=> "$from_offest:$next_offset"
     ];
     if($results == []){
         $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
