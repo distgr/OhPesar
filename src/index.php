@@ -12,7 +12,7 @@ foreach ($allowed_ipranges as $iprange) if (!$ok) {
     $upper_dec = (float) sprintf("%u", ip2long($iprange['upper']));
     if ($ip_dec >= $lower_dec and $ip_dec <= $upper_dec) $ok = true;
 }
-// if (!$ok) die();
+if (!$ok) die();
 
 ob_start();
 // error_reporting(0);
