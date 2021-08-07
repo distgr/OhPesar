@@ -7,6 +7,7 @@ if($text == '✏️ ویرایش ویس' && in_array($from_id, $CONFIG['ADMINS']
         'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
     ]);
     $db->query("UPDATE `user` SET `step` = 'editvoice1' WHERE `id` = '{$from_id}' LIMIT 1");
+    mysqli_close($db);
     exit();
 }
 
@@ -15,6 +16,7 @@ elseif($update->message->voice && $user['step'] == 'editvoice1'){
     $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
     if(!$voiceinfo){
         SendMessage($chat_id, 'چنین ویسی در دیتابیس «اوه پسر» یافت نشد !');
+        mysqli_close($db);
         exit();
     }
     $voicename = $voiceinfo['name'];
@@ -24,6 +26,7 @@ elseif($update->message->voice && $user['step'] == 'editvoice1'){
         'reply_markup'=>json_encode(['keyboard'=>$editvoicepanel ,'resize_keyboard'=>true])
     ]);
     $db->query("UPDATE `user` SET `step` = 'editvoice2', `voicename` = '{$voiceid}' WHERE `id` = '{$from_id}' LIMIT 1");
+    mysqli_close($db);
     exit();
 }
 
@@ -35,6 +38,7 @@ elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
     ];
     if(!in_array($text, $choices)){
         SendMessage($chat_id, 'لطفا فقط از دکمه های پایین یک گزینه را انتخاب کنید.');
+        mysqli_close($db);
         exit();
     }
     $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
@@ -54,6 +58,7 @@ elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
         ]);
         $db->query("UPDATE `user` SET `step` = 'editvoice3', `voiceedit` = 'replace' WHERE `id` = '{$from_id}' LIMIT 1");
     }
+    mysqli_close($db);
     exit();
 }
 
@@ -86,5 +91,6 @@ elseif($user['step'] == 'editvoice3'){
         SendMessage($CONFIG['CHANNEL']['LOGID'], "نام ویس « $old_name » به نام « $text » توسط ادمین $from_id با نام $first_name تغییر پیدا کرد.");
     }
     $db->query("UPDATE `user` SET `step` = 'none', `voiceedit` = NULL WHERE `id` = '{$from_id}' LIMIT 1");
+    mysqli_close($db);
     exit();
 }

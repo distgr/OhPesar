@@ -53,6 +53,7 @@ if(!is_null($inline_text)){
             'is_personal'=> true,
             'cache_time'=> 1
         ]);
+        mysqli_close($db);
         exit();
     }
 

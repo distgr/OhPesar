@@ -41,6 +41,7 @@ if($update->channel_post->reply_to_message && $update->channel_post->sender_chat
     }elseif($update->channel_post->text){
         SendMessage($senderid, $update->channel_post->text);
     }else{
+        mysqli_close($db);
         exit();
     }
     Bot('editMessageReplyMarkup',[
