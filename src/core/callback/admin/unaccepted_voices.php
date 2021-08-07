@@ -48,6 +48,7 @@ if($callback_query){
             $db->query("UPDATE `voices` SET `accepted` = '0', `mode` = 'private' WHERE `unique_id` = '$voiceid';");
             $db->query("UPDATE `user` SET `sendvoice` = '0' WHERE `user`.`id` = $voicesender;");
             SendMessage($getvoice['sender'], 'درخواست عمومی کردن ویس شما توسط مدیریت رد شد. ویس برروی حالت خصوصی مجددا در دسترس شما قرار گرفت. ❌');
+            mysqli_close($db);
             exit();
         }
         $db->query("DELETE FROM `voices` WHERE `unique_id` = '{$voiceid}' LIMIT 1");

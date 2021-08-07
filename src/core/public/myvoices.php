@@ -7,6 +7,7 @@ if($text == '🗂 ویس های من' or $text == '/myvoices'){
     
     if(!$num){
         SendMessage($chat_id, '⚠️ شما هیچ ویسی در ربات ثبت نکردید !');
+        mysqli_close($db);
         exit();
     }
     $MyVoicesKey = [];

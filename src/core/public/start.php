@@ -11,5 +11,6 @@ if(strtolower($text) == '/start' or $text == $backbtn or $text == '/start startf
         ])
     ]);
     $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
+    mysqli_close($db);
     exit();
 }

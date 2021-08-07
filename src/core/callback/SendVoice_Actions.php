@@ -22,6 +22,7 @@ if($callback_query){
                 ],
             ])
         ]);
+        mysqli_close($db);
         exit();
     }
 
@@ -44,7 +45,7 @@ if($callback_query){
                 ],
             ])
         ]);
-
+        mysqli_close($db);
         exit();
     }
 }

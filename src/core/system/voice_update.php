@@ -7,11 +7,13 @@ if($update->message->voice){
     if(!$voiceinfo) $found = false;
     if($voiceinfo['mode'] == 'private' && intval($voiceinfo['sender']) !== intval($chat_id)){
         SendMessage($chat_id, '👀 اوه پسر متاسفم! این یه ویس شخصیه که توسط یکی از کاربرای ربات ثبت شده و تو نمیتونی ازش استفاده کنی');
+        mysqli_close($db);
         exit();
     }
     if(!$voiceinfo['accepted'] && $voiceinfo['mode'] == 'public') $found = false;
     if(!$found && $user['step'] == 'none'){
         SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
+        mysqli_close($db);
         exit();
     }
 

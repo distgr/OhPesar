@@ -14,6 +14,7 @@ elseif($update->message->voice && $user['step'] == 'deletevoice1'){
     $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
     if(!$voiceinfo){
         SendMessage($chat_id, 'چنین ویسی در دیتابیس «اوه پسر» یافت نشد !');
+        mysqli_close($db);
         exit();
     }
     $voicename = $voiceinfo['name'];
@@ -29,6 +30,7 @@ elseif($text && $text !== $backbtn && $user['step'] == 'deletevoice2'){
     $choices = ["✅ بله", "❌ خیر"];
     if(!in_array($text, $choices)){
         SendMessage($chat_id, 'لطفا فقط از دکمه های پایین یک گزینه را انتخاب کنید.');
+        mysqli_close($db);
         exit();
     }
     if($text == $choices[1]){
@@ -38,6 +40,7 @@ elseif($text && $text !== $backbtn && $user['step'] == 'deletevoice2'){
             'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
         ]);
         $db->query("UPDATE `user` SET `step` = 'none' WHERE `id` = '{$from_id}' LIMIT 1");
+        mysqli_close($db);
         exit();
     }
     $voiceid = $user['voicename'];

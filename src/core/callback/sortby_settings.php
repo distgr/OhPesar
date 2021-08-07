@@ -40,6 +40,7 @@ if($callback_query){
                 'text' => "⚠️ تنظیمات نمایش از قبل بر روی این گزینه تنظیم بود",
                 'show_alert' => false
             ]);
+            mysqli_close($db);
             exit();
         }
         
