@@ -43,6 +43,7 @@ if(!is_null($inline_text)){
     $inline_text = trim($inline_text);
     $results = [];
     $inlineuserid = $update->inline_query->from->id;
+    $inlineusername = $update->inline_query->from->username;
     $userinline = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$inlineuserid}' LIMIT 1"));
     if(!$userinline){
         Bot('answerInlineQuery', [
@@ -56,6 +57,12 @@ if(!is_null($inline_text)){
         mysqli_close($db);
         exit();
     }
+
+    if(!$userinline['username'] or $user['username'] !== $fixusername){
+        if($inlineusername){
+            $db->query("UPDATE `user` SET `username` = '{$inlineusername}' WHERE `id` = '{$inlineuserid}' LIMIT 1");
+        }
+    }    
 
     $querystring = "SELECT * FROM `voices`";
     

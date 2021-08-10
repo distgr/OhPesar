@@ -15,7 +15,7 @@ foreach ($allowed_ipranges as $iprange) if (!$ok) {
 if (!$ok) die();
 
 ob_start();
-// error_reporting(0);
+error_reporting(0);
 date_default_timezone_set('Asia/Tehran');
 $CONFIG = json_decode(file_get_contents('config.json'), true);
 
@@ -43,13 +43,26 @@ if(!is_file('badwords.json')){
     file_put_contents('badwords.json', file_get_contents('https://raw.githubusercontent.com/amirshnll/Persian-Swear-Words/master/data.json'));
 }
 
-if(isset($from_id))
+if(isset($from_id)){
     $user = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$from_id}' LIMIT 1"));
-elseif(isset($fromid))
+    $fixuserid = $from_id;
+    $fixusername = $username;
+}
+elseif(isset($fromid)){
     $user = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$fromid}' LIMIT 1"));
-    
+    $fixuserid = $fromid;
+    $fixusername = $update->inline_query->from->username;
+}
+
 if (!$user) {
-    $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$from_id}', 'none')");
+    $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$fixuserid}', 'none')");
+}
+
+
+if(!$user['username'] or $user['username'] !== $fixusername){
+    if($fixusername){
+        $db->query("UPDATE `user` SET `username` = '{$fixusername}' WHERE `id` = '{$fixuserid}' LIMIT 1");
+    }
 }
 
 if(in_array($from_id, $CONFIG['ADMINS'])){
@@ -58,4 +71,5 @@ if(in_array($from_id, $CONFIG['ADMINS'])){
 
 foreach(Recursive('core') as $to_inc){ include ($to_inc); }
 
+mysqli_close($db);
 ?>
