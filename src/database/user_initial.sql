@@ -1,5 +1,6 @@
 CREATE TABLE `user` (
     `id` bigint(10) NOT NULL,
+    `username` char(32) NULL DEFAULT NULL,
     `step` varchar(50) NOT NULL,
     `voicename` char(200) DEFAULT NULL,
     `voicemode` char(50) DEFAULT NULL,
