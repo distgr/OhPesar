@@ -6,7 +6,8 @@
         "DATABASEID": "", // Channel numeric id
         "LOGID": "",  // Channel numeric id,
         "VOICEACCEPT": "", // Voice accept channel numeric id
-        "CONTACTID": "" // Contact us channel numeric id
+        "CONTACTID": "", // Contact us channel numeric id
+        "ANNOUNCEMENTS": "" // Announcements channel numeric id
     },
     "DATABASE":{
         "DBNAME": "", // Database name
