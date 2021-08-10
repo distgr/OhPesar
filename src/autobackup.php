@@ -115,6 +115,17 @@ Bot Voices : $all_voices
 Private Voices : $private_voices
 Accepted Voices : $accepted_voice
 Unaccepted Voices : $unaccepted_voice"]);
+        $dailylog = json_decode(file_get_contents('daily_log.json'), true);
+        $voice_use = $dailylog['voice'];
+        $new_members = $dailylog['newmembers'];
+        $new_voices = $dailylog['addedvoices'];
+        Bot('sendMessage',[
+            'chat_id'=>$CONFIG['CHANNEL']['ANNOUNCEMENTS'],
+            'text'=>"📎 گزارش امروز ربات اوه پسر :
+➖ تعداد استفاده از ویس ها : $voice_use
+➖ تعداد کاربران جدید : $new_members
+➖ تعداد ویس های جدید : $new_voices"]);
+        file_put_contents('daily_log.json', json_encode(['voice'=>0, 'useruse'=>0, 'newmembers'=>0, 'addedvoices'=>0]));
         sleep(1);
         unlink($fileName);
         exit;

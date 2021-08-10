@@ -43,6 +43,12 @@ if(!is_file('badwords.json')){
     file_put_contents('badwords.json', file_get_contents('https://raw.githubusercontent.com/amirshnll/Persian-Swear-Words/master/data.json'));
 }
 
+if(!is_file('daily_log.json')){
+    file_put_contents('daily_log.json', json_encode(['voice'=>0, 'newmembers'=>0, 'addedvoices'=>0]));
+}
+
+$dailylog = json_decode(file_get_contents('daily_log.json'), true);
+
 if(isset($from_id)){
     $user = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$from_id}' LIMIT 1"));
     $fixuserid = $from_id;
@@ -54,8 +60,10 @@ elseif(isset($fromid)){
     $fixusername = $update->inline_query->from->username;
 }
 
-if (!$user) {
+if (!mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `user` WHERE `id` = '{$from_id}' LIMIT 1"))) {
     $db->query("INSERT INTO `user` (`id`, `step`) VALUES ('{$fixuserid}', 'none')");
+    $dailylog['newmembers']++;
+    file_put_contents('daily_log.json', json_encode($dailylog));
 }
 
 

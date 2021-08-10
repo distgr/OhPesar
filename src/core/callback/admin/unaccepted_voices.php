@@ -9,6 +9,8 @@ if($callback_query){
             'text' => "ویس تایید شد. ✅",
             'show_alert' => false
         ]);
+        $dailylog['addedvoices']++;
+        file_put_contents('daily_log.json', json_encode($dailylog));
         $voiceid = str_replace('accept-', '', $data);
         $db->query("UPDATE `voices` SET `accepted` = '1' WHERE `unique_id` = '{$voiceid}' LIMIT 1");
         $getvoice = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
