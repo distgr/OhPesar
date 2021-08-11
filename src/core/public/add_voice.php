@@ -85,8 +85,18 @@ if($user['step'] == 'sendvoice3' && $text !== $backbtn){
     $voicedburl = 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']);
     $voicemsgid = $vr['result']['message_id'];
     $thevoicemode = $user['voicemode'];
-    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '0', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
+    
+    if(in_array($from_id, $CONFIG['ADMINS'])) $accepted = 1; else $accepted = 0;
+    
+    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '{$accepted}', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
     if($user['voicemode'] == 'public'){
+        if(in_array($from_id, $CONFIG['ADMINS'])){
+            Bot('sendMessage',[
+                'chat_id'=>$chat_id,
+                'text'=>'✅ ویس با موفقیت به ربات اضافه شد.',
+                'reply_markup'=>json_encode(['keyboard'=>$home, 'resize_keyboard'=>true])
+            ]);
+        }else{
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
             'text'=>'ویس شما برای تایید برای مدیریت ارسال شد. لطفا منتظر بمانید تا ویس ارسالی توسط شما تایید شود',
@@ -114,6 +124,7 @@ if($user['step'] == 'sendvoice3' && $text !== $backbtn){
 $senderusername"
         );
         $usersendvoice = '1';
+    }
     }else{
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
