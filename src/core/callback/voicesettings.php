@@ -2,9 +2,9 @@
 if($callback_query){
     $data = $callback_query->data;
 
-    if((strpos($data, 'voicesettings__') !== false)){
+    if((strpos($data, 'voicesettings___') !== false)){
             
-        $explode = explode('__', str_replace('voicesettings__', '', $data));
+        $explode = explode('___', str_replace('voicesettings___', '', $data));
         $voice_unique_id = $explode[0];
         $page_num = $explode[1];
         $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voice_unique_id}'"));
@@ -22,7 +22,7 @@ if($callback_query){
             $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
             $voicesettings_btn[] = [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$switchquery]];
         }else{
-            $voicesettings_btn[] = [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$page_num]];
+            $voicesettings_btn[] = [['text'=>"🔙 بازگشت", 'callback_data'=>'voicelistpage_'.$page_num.'_myvoices']];
         }
 
         Bot('EditMessageText',[
@@ -67,7 +67,7 @@ if($callback_query){
                 'text'=>"ویس « $voicename » به حالت خصوصی تغییر پیدا کرد. درصورتی که میخواهید مجدد این ویس را به حالت عمومی تغییر دهید، بدون نیاز به تایید مجدد میتوانید این کار را انجام دهید.",
                 'reply_markup'=>json_encode([
                     'inline_keyboard'=>[
-                        [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$pagenum]],
+                        [['text'=>"🔙 بازگشت", 'callback_data'=>'voicelistpage_'.$page_num.'_myvoices']],
                     ],
                 ])
             ]);
@@ -80,7 +80,7 @@ if($callback_query){
                     'text'=>"ویس « $voicename » به حالت عمومی تغییر پیدا کرد. (توجه: این ویس یکبار توسط مدیریت تایید شده و اکنون دیگر نیازی به تایید مجدد نیست)",
                     'reply_markup'=>json_encode([
                         'inline_keyboard'=>[
-                            [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$pagenum]],
+                            [['text'=>"🔙 بازگشت", 'callback_data'=>'voicelistpage_'.$page_num.'_myvoices']],
                         ],
                     ])
                 ]);
@@ -114,7 +114,7 @@ if($callback_query){
                     'text'=>"🕔 این ویس تا به حال توسط مدیریت تایید نشده است! ویس شما برای مدیریت ارسال شد، لطفا کمی صبر کنید تا ویس شما تایید شود.",
                     'reply_markup'=>json_encode([
                         'inline_keyboard'=>[
-                            [['text'=>"🔙 بازگشت", 'callback_data'=>'myvoicespage_'.$pagenum]],
+                            [['text'=>"🔙 بازگشت", 'callback_data'=>'voicelistpage_'.$page_num.'_myvoices']],
                         ],
                     ])
                 ]);

@@ -23,7 +23,7 @@ if($update->message->voice){
         [['text'=>"🎤 ارسال ویس برای دیگران", 'switch_inline_query'=>$switchquery]]
     ];
     if(intval($voiceinfo['sender']) == intval($chat_id)){
-        $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings__'.$vid.'__00']];
+        $voiceload_btns[] = [['text'=>"⚙️ تنظیمات این ویس", 'callback_data'=>'voicesettings___'.$vid.'___00']];
     }
     $addtexts = '';
 
@@ -42,7 +42,7 @@ if($update->message->voice){
 }
 
 elseif($update->chosen_inline_result){
-    $voiceid = explode('__', $update->chosen_inline_result->result_id)[0];
+    $voiceid = explode('___', $update->chosen_inline_result->result_id)[0];
     $user = $update->chosen_inline_result->from->id;
     $query = $update->chosen_inline_result->query;
     $db->query("UPDATE `voices` SET `usecount` = `usecount` + 1 WHERE `unique_id` = '{$voiceid}' LIMIT 1");

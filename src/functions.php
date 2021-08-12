@@ -3,11 +3,11 @@ function Getme(){
     return json_decode(file_get_contents('https://api.telegram.org/bot'.API_KEY.'/getMe'),true)['result'];
 }
 function SendMessage($chat_id, $text, $mode='MarkDown', $reply=null, $keyboard=null){
-	Bot('sendMessage',[
-'chat_id'=>$chat_id,
-'text'=>$text,
-  'reply_markup'=>$keyboard
-	 ]);
+    Bot('sendMessage',[
+        'chat_id'=>$chat_id,
+        'text'=>$text,
+        'reply_markup'=>$keyboard
+    ]);
 }
 function SendVoice($chat_id, $voice, $markup=null, $caption=null){
     return Bot('sendVoice',[
