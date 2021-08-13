@@ -1,5 +1,7 @@
 <?php
 
+use function PHPSTORM_META\map;
+
 if($text == '✏️ ویرایش ویس' && in_array($from_id, $CONFIG['ADMINS'])){
     Bot('sendMessage',[
         'chat_id'=>$chat_id,
@@ -34,7 +36,8 @@ elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
     $voiceid = $user['voicename'];
     $choices = [
         '✏️ ویرایش نام ویس',
-        '✏️ ویرایش صدای ویس'  
+        '✏️ ویرایش صدای ویس',
+        '✏️ ویرایش تعداد استفاده'
     ];
     if(!in_array($text, $choices)){
         SendMessage($chat_id, 'لطفا فقط از دکمه های پایین یک گزینه را انتخاب کنید.');
@@ -43,6 +46,7 @@ elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
     }
     $voiceinfo = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$voiceid}'"));
     $voicename = $voiceinfo['name'];
+    $nowusecount = $voiceinfo['usecount'];
     if($text == $choices[0]){
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
@@ -57,6 +61,13 @@ elseif($text && $text !== $backbtn && $user['step'] == 'editvoice2'){
             'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
         ]);
         $db->query("UPDATE `user` SET `step` = 'editvoice3', `voiceedit` = 'replace' WHERE `id` = '{$from_id}' LIMIT 1");
+    }elseif($text == $choices[2]){
+        Bot('sendMessage',[
+            'chat_id'=>$chat_id,
+            'text'=>"لطفا تعداد استفاده جدید را برای ویس « $voicename » ارسال کنید :\n* درحال حاضر تعداد استفاده از این ویس $nowusecount بار میباشد.",
+            'reply_markup'=>json_encode(['keyboard'=>$back ,'resize_keyboard'=>true])
+        ]);
+        $db->query("UPDATE `user` SET `step` = 'editvoice3', `voiceedit` = 'edituse' WHERE `id` = '{$from_id}' LIMIT 1");
     }
     mysqli_close($db);
     exit();
@@ -89,6 +100,16 @@ elseif($user['step'] == 'editvoice3'){
             'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
         ]);
         SendMessage($CONFIG['CHANNEL']['LOGID'], "نام ویس « $old_name » به نام « $text » توسط ادمین $from_id با نام $first_name تغییر پیدا کرد.");
+    }elseif(is_numeric($text) && $user['voiceedit'] == 'edituse'){
+        $voicename = $voiceinfo['name'];
+        $old_use = $voiceinfo['usecount'];
+        $db->query("UPDATE `voices` SET `usecount` = '{$text}' WHERE `unique_id` = '{$voiceid}' LIMIT 1");
+        Bot('sendMessage',[
+            'chat_id'=>$chat_id,
+            'text'=>"✅ تعداد استفاده ویس « $voicename » از تعداد $old_use بار، به $text بار تغییر پیدا کرد.",
+            'reply_markup'=>json_encode(['keyboard'=>$adminpanel ,'resize_keyboard'=>true])
+        ]);
+        SendMessage($CONFIG['CHANNEL']['LOGID'], "تعداد استفاده ویس  « $old_name » از تعداد $old_use بار، به $text بار توسط ادمین $from_id با نام $first_name تغییر پیدا کرد");
     }
     $db->query("UPDATE `user` SET `step` = 'none', `voiceedit` = NULL WHERE `id` = '{$from_id}' LIMIT 1");
     mysqli_close($db);
