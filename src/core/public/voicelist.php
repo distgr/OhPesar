@@ -102,7 +102,7 @@ if($text == '🔊 لیست ویس ها' or (strpos($data, 'voicelist_sort') !== 
             'text' => "📄 به صفحه جدید منتقل شدید.",
             'show_alert' => false
         ]);
-        if($pagenum == 0 or ($pagenum == 1 && $num <= 10)){
+        if($pagenum == 0 or ($pagenum == 1 && $num <= $page_limit)){
         }elseif($lastpage){
             $unshift[] = [['text'=>'صفحه قبلی ◀️', 'callback_data'=>'voicelistpage_'.strval($pagenum-1).'_'.$queryset]];
         }elseif($pagenum == 1){
@@ -122,6 +122,10 @@ if($text == '🔊 لیست ویس ها' or (strpos($data, 'voicelist_sort') !== 
                 if( IsBadWord($voiceinfo['name']) ) continue;
             }
         }
+        if(!$voiceinfo['accepted'] && strtolower($voiceinfo['mode']) == 'public'){
+            $msgbtn[] = [['text'=>'🕐 '.$voiceinfo['name'], 'callback_data'=>'pendingmode']];
+            continue;
+        }
         $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
         $addtomsg = [['text'=>"🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$switchquery]];
         if($voiceinfo['sender'] == $userid_meta){
@@ -135,7 +139,7 @@ if($text == '🔊 لیست ویس ها' or (strpos($data, 'voicelist_sort') !== 
     }
     
     if($firstpage){
-        $msgbtn = array_splice($msgbtn, 0, 10, true);
+        $msgbtn = array_splice($msgbtn, 0, $page_limit, true);
     }else{
         $msgbtn = array_splice($msgbtn, ($page_limit*(($pagenum)-1)), $page_limit);
     }
