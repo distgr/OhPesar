@@ -3,7 +3,7 @@
 if($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
     $all_voices = $unaccepted_voice = $accepted_voice = $all_users = $private_voices = 0;
     
-    $all_users = mysqli_num_rows(mysqli_query($db, "SELECT * FROM `user`"));
+    $all_users = number_format(mysqli_num_rows(mysqli_query($db, "SELECT * FROM `user`")));
     
     $query = mysqli_query($db, "SELECT * FROM `voices`");
     $all_voices = mysqli_num_rows($query);
@@ -13,11 +13,7 @@ if($text == '🖥 آمار' && in_array($from_id, $CONFIG['ADMINS'])){
         if($thevoice['mode'] == 'private'){
             $private_voices++;
         }else{
-            if($thevoice['accepted']){
-                $accepted_voice++;
-            }else{
-                $unaccepted_voice++;
-            }
+            if($thevoice['accepted']) $accepted_voice++; else $unaccepted_voice++;
         }
     }
     
