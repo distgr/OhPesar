@@ -1,6 +1,7 @@
 <?php
 
 function MakeVoiceResponde($voiceinfo, $show_id, $addtofav, $user, $db){
+    global $CONFIG;
     $voicename = $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'];
     $fix_title = $show_id ? '('.$voiceinfo['id'].') '.$voicename : $voicename;
     if($addtofav){
@@ -11,7 +12,7 @@ function MakeVoiceResponde($voiceinfo, $show_id, $addtofav, $user, $db){
     return [
         'type' => 'voice',
         'id' => $voiceinfo['unique_id'].'___'.base64_encode(rand()),
-        'voice_url' =>  $voiceinfo['url'],
+        'voice_url' =>  'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.$voiceinfo['messageid'],
         'title' => $fix_title,
     ];
 }

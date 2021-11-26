@@ -3,7 +3,6 @@ CREATE TABLE `voices` (
     `unique_id` char(250) NOT NULL,
     `accepted` char(200) DEFAULT '0',
     `name` char(50) NOT NULL,
-    `url` char(200) NOT NULL,
     `sender` char(200) NOT NULL,
     `messageid` char(200) NOT NULL,
     `mode` char(200) NOT NULL,
