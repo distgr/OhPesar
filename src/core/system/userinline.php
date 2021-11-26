@@ -4,13 +4,9 @@ function MakeVoiceResponde($voiceinfo, $show_id, $addtofav, $user, $db){
     $voicename = $voiceinfo['mode'] == 'private' ? '🔐 '.$voiceinfo['name'] : $voiceinfo['name'];
     $fix_title = $show_id ? '('.$voiceinfo['id'].') '.$voicename : $voicename;
     if($addtofav){
-      $voiceid = $voiceinfo['unique_id'];
-      $voice_fav_status = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `favorites` WHERE `voiceid` = '{$voiceid}' and `userid` = '{$user}' LIMIT 1"));
-      if($voice_fav_status){
-        $fix_title = " (✅) ".$fix_title;
-      }else{
-        $fix_title = " (☑️) ".$fix_title;
-      }
+        $voiceid = $voiceinfo['unique_id'];
+        $voice_fav_status = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `favorites` WHERE `voiceid` = '{$voiceid}' and `userid` = '{$user}' LIMIT 1"));
+        $fix_title = (($voice_fav_status) ? " (✅) " : " (☑️) ").$fix_title;
     }
     return [
         'type' => 'voice',
@@ -20,17 +16,9 @@ function MakeVoiceResponde($voiceinfo, $show_id, $addtofav, $user, $db){
     ];
 }
 
-function startsWith ($string, $startString)
-{
-    $len = strlen($startString);
-    return (substr($string, 0, $len) === $startString);
-}
-
 function arraypos($text, $array){
     foreach ($array as $i) {
-        if(strpos($text, $i) !== false){
-            return true;
-        }
+        if(strpos($text, $i) !== false) return true;
     }
     return false;
 }
@@ -69,21 +57,6 @@ if(!is_null($inline_text)){
         exit();
     }
 
-    // $tch = 'member';
-
-    // if(!in_array($tch,['member','creator','administrator'])){
-    //     Bot('answerInlineQuery', [
-    //         'inline_query_id' => $membercalls,
-    //         'results' => json_encode($results),
-    //         'switch_pm_text'=> 'برای استفاده از ربات کلیک کنید',
-    //         'switch_pm_parameter'=> 'jointhechannel',
-    //         'is_personal'=> true,
-    //         'cache_time'=> 1
-    //     ]);
-    //     mysqli_close($db);
-    //     exit();
-    // }
-
     if(!$userinline['username']){
         if($inlineusername){
             $db->query("UPDATE `user` SET `username` = '{$inlineusername}' WHERE `id` = '{$inlineuserid}' LIMIT 1");
@@ -111,19 +84,19 @@ if(!is_null($inline_text)){
     elseif(strpos($inline_text, '-private') !== false){
         $inline_text = trim(str_replace('-private', '', $inline_text));
         $querystring = "SELECT * FROM `voices` WHERE `mode` = 'private'";
-        $fix_order = true;
+        $reorder = true;
     }
 
     elseif(strpos($inline_text, '-public') !== false){
         $inline_text = trim(str_replace('-public', '', $inline_text));
         $querystring = "SELECT * FROM `voices` WHERE `mode` = 'public'";
-        $fix_order = true;
+        $reorder = true;
     }
 
     elseif(strpos($inline_text, '-me') !== false){
         $inline_text = trim(str_replace('-me', '', $inline_text));
         $querystring = "SELECT * FROM `voices` WHERE `sender` = '{$inlineuserid}'";
-        $fix_order = true;
+        $reorder = true;
     }
 
     elseif(strpos($inline_text, '-latest') !== false){
@@ -145,7 +118,6 @@ if(!is_null($inline_text)){
               }
           }
           $load_favorites = true;
-          
       }
 
     if($order){
@@ -211,13 +183,11 @@ if(!is_null($inline_text)){
     if(count($results) >= 10)
         $dataval['next_offset'] = "$from_offest:$next_offset";
 
-    if($results == [] && !$fix_order){
+    if($results == [] && !$reorder){
         $dataval['switch_pm_text'] = 'نتیجه خاصی پیدا نشد';
         $dataval['switch_pm_parameter'] = 'noresult';
     }
     elseif(strlen($inline_text) < 1 && $order){
-        // $dataval['switch_pm_text'] = 'ارسال ویس جدید';
-        // $dataval['switch_pm_parameter'] = 'sendvoice';
         $dataval['switch_pm_text'] = 'وضعیت نمایش بر اساس '.$status.' ↓';
         $dataval['switch_pm_parameter'] = 'changevisib';
     }
