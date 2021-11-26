@@ -80,11 +80,10 @@ elseif($user['step'] == 'editvoice3'){
         $vid = Forward($CONFIG['CHANNEL']['DATABASEID'], $chat_id, $message_id);
         $vr = json_decode($vid, true);
         $voicename = $voiceinfo['name'];
-        $newurl = 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']);
         $newmessageid = $vr['result']['message_id'];
         $voiceprimarykey = $voiceinfo['id'];
         $newvoiceuniqueid = $update->message->voice->file_unique_id;
-        $db->query("UPDATE `voices` SET `url` = '{$newurl}', `messageid` = '{$newmessageid}', `unique_id` = '{$newvoiceuniqueid}' WHERE `id` = '{$voiceprimarykey}' LIMIT 1");
+        $db->query("UPDATE `voices` SET `messageid` = '{$newmessageid}', `unique_id` = '{$newvoiceuniqueid}' WHERE `id` = '{$voiceprimarykey}' LIMIT 1");
         Bot('sendMessage',[
             'chat_id'=>$chat_id,
             'text'=>"✅ ویس ارسالی شما، جایگزین ویس « $voicename » شد.",

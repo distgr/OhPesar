@@ -82,13 +82,12 @@ if($user['step'] == 'sendvoice3' && $text !== $backbtn){
     $vr = json_decode($vid, true);
     $id = strval(rand(11111, 99999));
     $definedvoicename = $user['voicename'];
-    $voicedburl = 'https://t.me/'.$CONFIG['CHANNEL']['DATABASE'].'/'.strval($vr['result']['message_id']);
     $voicemsgid = $vr['result']['message_id'];
     $thevoicemode = $user['voicemode'];
     
     if(in_array($from_id, $CONFIG['ADMINS'])) $accepted = 1; else $accepted = 0;
     
-    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `url`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '{$accepted}', '{$definedvoicename}', '$voicedburl', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
+    $db->query("INSERT INTO `voices` (`unique_id`, `accepted`, `name`, `sender`, `messageid`, `mode`, `usecount`) VALUES ('{$systemid}', '{$accepted}', '{$definedvoicename}', '$from_id', '$voicemsgid', '$thevoicemode', 0)");
     if($user['voicemode'] == 'public'){
         if(in_array($from_id, $CONFIG['ADMINS'])){
             Bot('sendMessage',[
