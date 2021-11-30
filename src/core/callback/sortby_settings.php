@@ -4,6 +4,7 @@ if($callback_query){
     $data = $callback_query->data;
         
     $settings_text = "⚙️ به تنظیمات مرتب سازی ربات اوه پسر خوش آمدید! در این بخش میتوانید تعیین کنید که هنگامی که آیدی ربات را در چت مورد نظر وارد کردید، بر چه اساسی و چه ویس هایی برای شما به نمایش گذاشته شود 👇🏻";
+    $sortby_selected_emoji = '✅';
 
     if($data == 'usersettings' || (strpos($data, 'setsortby_') !== false)){
         if(strpos($data, 'setsortby_') !== false){
@@ -23,15 +24,15 @@ if($callback_query){
             $db->query("UPDATE `user` SET `sortby` = '{$mode}' WHERE `user`.`id` = $chatid;");
             bot('answercallbackquery', [
                 'callback_query_id' => $update->callback_query->id,
-                'text' => "✅ تنظیم نمایش ویس ها بروز شد. ",
+                'text' => .$sortby_selected_emoji" تنظیم نمایش ویس ها بروز شد. ",
                 'show_alert' => false
             ]);
         }
         $sortby = [
-            'oldest'=>($user['sortby'] == 'oldest') ? '✅' : '',
-            'newest'=>($user['sortby'] == 'newest') ? '✅' : '',
-            'popularest'=>($user['sortby'] == 'popularest') ? '✅' : '',
-            'private'=>($user['sortby'] == 'private') ? '✅' : ''
+            'oldest'=>($user['sortby'] == 'oldest') ? $sortby_selected_emoji : '',
+            'newest'=>($user['sortby'] == 'newest') ? $sortby_selected_emoji : '',
+            'popularest'=>($user['sortby'] == 'popularest') ? $sortby_selected_emoji : '',
+            'private'=>($user['sortby'] == 'private') ? $sortby_selected_emoji : ''
         ];
 
         Bot('EditMessageText',[
