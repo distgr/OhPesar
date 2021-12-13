@@ -69,7 +69,10 @@ if($user['step'] == 'sendvoice3' && $text !== $backbtn){
     }
     $getsubmittedvoice = mysqli_fetch_assoc(mysqli_query($db, "SELECT * FROM `voices` WHERE `unique_id` = '{$systemid}' LIMIT 1"));
     if($getsubmittedvoice){
-        if($getsubmittedvoice['mode'] == 'private'){
+        if($getsubmittedvoice['banned'] == '1'){
+            SendMessage($chat_id, '⚠️ متاسفانه امکان ثبت این ویس وجود ندارد. لطفا یک ویس دیگر ارسال کنید.');
+        }
+        elseif($getsubmittedvoice['mode'] == 'private'){
             SendMessage($chat_id, '❗️اوه پسر! این ویسی که فرستادی قبلا داخل ربات توسط یه شخص دیگه ثبت شده، ولی مثل اینکه ویسی که ثبت کرده خصوصی بوده و فقط خودش میتونه از این ویس استفاده کنه... حالا لطفا یه ویس دیگه بفرست :');
         }else{
             $subvoicename = $getsubmittedvoice['name'];

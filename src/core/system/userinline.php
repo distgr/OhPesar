@@ -31,6 +31,7 @@ function SearchFilter($voiceinfo, $userinline, $inlineuserid, $inline_text){
     }
     if((strtolower($voiceinfo['mode']) == 'private') && (intval($voiceinfo['sender']) !== intval($inlineuserid))){ return false; }
     elseif(!$voiceinfo['accepted'] && strtolower($voiceinfo['mode']) == 'public'){ return false; }
+    elseif($voiceinfo['banned'] == '1'){ return false; }
     if((!(strpos(strtolower($voiceinfo['name']), strtolower($inline_text)) !== false) && strlen($inline_text) > 1) && !arraypos($inline_text, $kwargs)){ return false; }
     return true;
 }
