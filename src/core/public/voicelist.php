@@ -126,8 +126,10 @@ if($text == '🔊 لیست ویس ها' or (strpos($data, 'voicelist_sort') !== 
             $msgbtn[] = [['text'=>'🕐 '.$voiceinfo['name'], 'callback_data'=>'pendingmode']];
             continue;
         }
+        if($voiceinfo['banned'] == '1') continue;
         $switchquery = ['byname'=>$voiceinfo['name'], 'byid'=>'-id '.$voiceinfo['id']][$user['sendvoiceaction']];
-        $addtomsg = [['text'=>"🎤 ".$voiceinfo['name'], 'switch_inline_query'=>$switchquery]];
+        if($voiceinfo['mode'] == 'private') $voice_emoji = '🔒'; else $voice_emoji = '🎤'
+        $addtomsg = [['text'=>$voice_emoji." ".$voiceinfo['name'], 'switch_inline_query'=>$switchquery]];
         if($voiceinfo['sender'] == $userid_meta){
             $addtomsg[] = ['text'=>'⚙️ تنظیمات ویس', 'callback_data'=>'voicesettings___'.$voiceinfo['unique_id'].'___'.$pagenum];
         }

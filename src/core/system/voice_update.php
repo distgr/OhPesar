@@ -37,6 +37,7 @@ elseif($update->message->voice){
         exit();
     }
     if(!$voiceinfo['accepted'] && $voiceinfo['mode'] == 'public') $found = false;
+    if($voiceinfo['banned' == '1']) $found = false;
     if(!$found && $user['step'] == 'none'){
         SendMessage($chat_id, '🧐 همچین ویسی داخل ربات ثبت نشده!');
         mysqli_close($db);
